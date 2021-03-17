@@ -222,22 +222,22 @@ mdsput(".grid:psin:comment","data($)","Normalized poloidal flux in cells")
 # checked to here - Bill Meyer
 #
 # R- and Z-coordinate of cell east [X] face, Z in machine coordinates
-trm=0.5*(com.rm[0:com.nx+1,,2]+com.rm[0:com.nx+1,,4]] # base 0,   (0:nxm+1,0:nym+1,0:4)
+trm=0.5*(com.rm[0:com.nx+1,:,2]+com.rm[0:com.nx+1,:,4]) # base 0,   (0:nxm+1,0:nym+1,0:4)
 mdsput(".grid:cr_x","data($)",trm)
 mdsput(".grid:cr_x:basisname","data($)","0.5*[com.rm[0:com.nx,,2]+com.rm[0:com.nx,,4]]") # base 0,   (0:nxm+1,0:nym+1,0:4)
 mdsput(".grid:cr_x:comment","data($)","radial coordinate of east face [grd.m]")
 
-trm=0.5*[com.zm[0:com.nx+1,,2]+com.zm[0:com.nx+1,,4]-com.zshift) # base 0,   (0:nxm+1,0:nym+1,0:4)
+trm=0.5*(com.zm[0:com.nx+1,:,2]+com.zm[0:com.nx+1,:,4]-com.zshift) # base 0,   (0:nxm+1,0:nym+1,0:4)
 mdsput(".grid:cz_x","data($)",trm)
 mdsput(".grid:cz_x:basisname","data($)","0.5*[com.zm[0:com.nx,,2]+com.zm[0:com.nx,,4]]-com.zshift") # base 0,   (0:nxm+1,0:nym+1,0:4)
 mdsput(".grid:cz_x:comment","data($)","vertical coordinate of east face, machine coordinates [grd.m]")
 
 # R- and Z-coordinate of cell north [Y] face, Z in machine coordinates
-trm=0.5*(com.rm[,0:com.ny+1,3]+com.rm[,0:com.ny+1,4]) # base 0,   (0:nxm+1,0:nym+1,0:4)
+trm=0.5*(com.rm[:,0:com.ny+1,3]+com.rm[:,0:com.ny+1,4]) # base 0,   (0:nxm+1,0:nym+1,0:4)
 mdsput(".grid:cr_y","data($)",trm)
 mdsput(".grid:cr_y:basisname","data($)","0.5*[com.rm[,0:com.ny,3]+com.rm[,0:com.ny,4]]") # base 0,   (0:nxm+1,0:nym+1,0:4)
 mdsput(".grid:cr_y:comment","data($)","radial coordinate of north face [grd.m]")
-trm=0.5*(com.zm[,0:com.ny+1,3]+com.zm[,0:com.ny+1,4])-com.zshift # base 0,   (0:nxm+1,0:nym+1,0:4)
+trm=0.5*(com.zm[:,0:com.ny+1,3]+com.zm[:,0:com.ny+1,4])-com.zshift # base 0,   (0:nxm+1,0:nym+1,0:4)
 mdsput(".grid:cz_y","data($)",trm)
 mdsput(".grid:cz_y:basisname","data($)","0.5*[com.zm[,0:com.ny,3]+com.zm[,0:com.ny,4]]-com.zshift") # base 0,   (0:nxm+1,0:nym+1,0:4)
 mdsput(".grid:cz_y:comment","data($)","Vertical coordinate of north face, machine coordinates, [grd.m]")
@@ -255,8 +255,8 @@ if iscalc_length == no:
       lpol[0,iy] = 0.5/com.gx[0,iy]
       lparal[0,iy] = 0.5/com.gx[0,iy]/com.rr[0,iy]
       lparalf[0,iy] = 1.0/com.gx[0,iy]/com.rr[0,iy]
-      do ix in np.arange(1,com.nx+2):
-         lpolf[ix,iy] = 
+      for ix in np.arange(1,com.nx+2):
+         lpolf[ix,iy] = 1.0 ### !!! Dummy value added
 
    mdsput(".grid:dspar","data($)",lparal)
    mdsput(".grid:dspar:basisname","data($)","lparal from calc_lengths")
@@ -268,8 +268,8 @@ if iscalc_length == no:
    mdsput(".grid:dspol:comment","data($)","poloidal distance from inner plate [grd.m]")
    
    # place holder for Coster's DSRAD parameter, Radial distance
-   if [.not. exists["iscalc_radius"]] integer iscalc_radius=no
-   if [iscalc_radius .eq. no] read calc_radius
+#   if [.not. exists["iscalc_radius"]] integer iscalc_radius=no ### !!! Where exists function comes from?
+#   if [iscalc_radius .eq. no] read calc_radius ### !!! How to read calc_radius? 
    mdsput(".grid:dsrad","data($)",lrad)
    mdsput(".grid:dsrad:basisname","data($)","lrad from calc_radius")
    mdsput(".grid:dsrad:comment","data($)","radial distance from separatrix [grd.m]")
@@ -286,8 +286,8 @@ if iscalc_length == no:
    mdsput(".grid:dstarg2.comment","data($)","distance from OSP [grd.m]")
 
    # distance for target 2 for DN configuration
-   if [com.nxpt .eq. 2] then
-   mdsput(".grid:dstarg2","data($)",com.yyrb[1]) # base 0,   (0:ny+1,1:nxpt)
+   if com.nxpt == 2: ### !!! How many come after if?
+       mdsput(".grid:dstarg2","data($)",com.yyrb[1]) # base 0,   (0:ny+1,1:nxpt)
    mdsput(".grid:dstarg2.basisname","data($)","com.yyrb[1]") # base 0,   (0:ny+1,1:nxpt)
    mdsput(".grid:dstarg2.comment","data($)","distance from 2nd ISP [grd.m]")
    
@@ -315,8 +315,8 @@ mdsput(".grid:psinrad:comment","data($)","normalized poloidal flux radially at O
 # place holder for Coster's REGFLY parameter, flx.y-directed flux region indices
 
 # place holder for Coster's REGVOL parameter, volume region indices
-range core=com.ixpt1+1:com.ixpt2
-integer regvol[0:com.nx+1,0:com.ny+1]
+core=range(com.ixpt1+1,com.ixpt2)  ### !!! range core=com.ixpt1+1:com.ixpt2
+### !!! integer regvol[0:com.nx+1,0:com.ny+1]
 regvol[core,0:com.iysptrx]=1
 regvol[core,com.iysptrx+1:com.ny+1]=2
 regvol[0:com.ixpt1,0:com.ny+1]=3
@@ -327,22 +327,22 @@ mdsput(".grid:regvol:comment","data($)","1 for core, 2 for SOL abv xpt, 3 for in
 
 # Z-coordinate of cell centers, Z in machine coordinates
 mdsput(".grid:cz:basisname","data($)","com.zm[,,0]-com.zshift") # base 0,   (0:nxm+1,0:nym+1,0:4)
-real trm[0:com.nx+1,0:com.ny+1]=com.zm[,,0]-com.zshift # base 0,   (0:nxm+1,0:nym+1,0:4)
+trm[0:com.nx+1,0:com.ny+1]=com.zm[:,:,0]-com.zshift # base 0,   (0:nxm+1,0:nym+1,0:4)
 mdsput(".grid:cz","data($)",trm)
 mdsput(".grid:cz:comment","data($)","Vertical coordinate of cell center, machine coordinates [grd.m]")
 
 # R- and Z-coordinate of cell vertices, Z in machine coordinates
-mdsput(".grid:r","data($)",com.rm[,,1:4]) # base 0,   (0:nxm+1,0:nym+1,0:4)
+mdsput(".grid:r","data($)",com.rm[:,:,1:4]) # base 0,   (0:nxm+1,0:nym+1,0:4)
 mdsput(".grid:r:basisname","data($)","com.rm[,,1:4]") # base 0,   (0:nxm+1,0:nym+1,0:4)
 mdsput(".grid:r:comment","data($)","radius of cell vertices [grd.m]")
-mdsput(".grid:z","data($)",com.zm[,,1:4]-com.zshift) # base 0,   (0:nxm+1,0:nym+1,0:4)
+mdsput(".grid:z","data($)",com.zm[:,:,1:4]-com.zshift) # base 0,   (0:nxm+1,0:nym+1,0:4)
 mdsput(".grid:z:basisname","data($)","com.zm[,,1:4]-com.zshift") # base 0,   (0:nxm+1,0:nym+1,0:4)
 mdsput(".grid:z:comment","data($)","Z of cell vertices, machine coordinates [grd.m]")
 
 # Vessel structure
 # test on com.xlim added for api.one of Rognlien's benchmark cases
-if [com.nlim .gt. 0] then
-mdsput(".grid:vessel","data($)",transpose[[com.xlim[1:shape[com.xlim]-1],com.ylim[1:shape[com.ylim]-1]-com.zshift,com.xlim[2:shape[com.xlim]],com.ylim[2:shape[com.ylim]]-com.zshift]])
+if com.nlim > 0:
+    mdsput(".grid:vessel","data($)",transpose[[com.xlim[1:shape[com.xlim]-1],com.ylim[1:shape[com.ylim]-1]-com.zshift,com.xlim[2:shape[com.xlim]],com.ylim[2:shape[com.ylim]]-com.zshift]])
 endif
 mdsput(".grid:vessel:basisname","data($)","com.xlim[0], com.ylim[0]-com.zshift, com.xlim[1], com.ylim[1]-com.zshift")
 mdsput(".grid:vessel:comment","data($)","Data defining line segments of first wall [grd.m]")
