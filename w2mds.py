@@ -348,48 +348,48 @@ mdsput(".grid:vessel:basisname","data($)","com.xlim[0], com.ylim[0]-com.zshift, 
 mdsput(".grid:vessel:comment","data($)","Data defining line segments of first wall [grd.m]")
 
 # Atom charge
-real za[ns]
-integer bbb.igsp,ifld,ii
-do ii=1,com.nhgsp
-za[2*[ii-1]+1]=0.
-za[2*[ii-1]+2]=api.bbb.zi[ii]
-enddo
+za = [] ### !!! real za[ns]
+#integer bbb.igsp,ifld,ii
+for ii in range(com.nhgsp): #do ii=1,com.nhgsp
+    za.append(0.0) #za[2*[ii-1]+1]=0.
+    za.append(api.bbb.zi[ii]) #za[2*[ii-1]+2]=api.bbb.zi[ii]
+#enddo
 
-if [bbb.isimpon .ge. 5] then  # multi species impurity
-integer nsm1=2*com.nhgsp
-do bbb.igsp=com.nhgsp+1,com.ngsp
-integer jz=bbb.igsp-com.nhgsp
-za[nsm1+jz]=0.
-do ifld=1,com.nzsp[jz]
-za[nsm1+jz+ifld]=api.bbb.zi[nsm1+ifld]
-enddo
-nsm1=nsm1+com.nzsp[jz]
-enddo
-endif
+if(bbb.isimpon >= 5): #if [bbb.isimpon .ge. 5] then  # multi species impurity
+    nsm1= 2*com.nhgsp #integer nsm1=2*com.nhgsp
+    for igsp in range(com.nhgsp+1,com.ngsp):  #do bbb.igsp=com.nhgsp+1,com.ngsp
+        jz = igsp - com.nhgsp #integer jz=bbb.igsp-com.nhgsp
+        za.append(0.0) #za[nsm1+jz]=0.
+        for ifld in range(com.nzsp[js]): #do ifld=1,com.nzsp[jz]
+            za.append(api.bbb.zi[nsm1+ifld])#za[nsm1+jz+ifld]=api.bbb.zi[nsm1+ifld]
+        #enddo
+        nsm1=nsm1+com.nzsp[jz]
+    #enddo
+#endif
 
 mdsput(".grid:za","data($)",za)
 mdsput(".grid:za:basisname","data($)","bbb.see write_uedge2mds") # base 0,   (0:nx+1,0:ny+1,1:nstra)
 mdsput(".grid:za:comment","data($)","Charge of ion/neutral species")
 
 # Nuclear charge
-real zn[ns]
-integer bbb.igsp,ifld,ii
-do ii=1,com.nhgsp
-zn[2*[ii-1]+1]=1.
-zn[2*[ii-1]+2]=1.
-enddo
+zn = [] ### !!! real zn[ns]
+### ??? integer bbb.igsp,ifld,ii
+for ii in range(com.nhgsp): #do ii=1,com.nhgsp
+    zn.append(1.0) #zn[2*[ii-1]+1]=1.
+    zn.append(1.0) #zn[2*[ii-1]+2]=1.
+#enddo
 
-if [bbb.isimpon .ge. 5] then  # multi species impurity
-integer nsm1=2*com.nhgsp
-do bbb.igsp=com.nhgsp+1,com.ngsp
-integer jz=bbb.igsp-com.nhgsp
-zn[nsm1+jz]=bbb.znucl[nsm1+jz]
-do ifld=1,com.nzsp[jz]
-zn[nsm1+jz+ifld]=bbb.znucl[nsm1+ifld]
-enddo
-nsm1=nsm1+com.nzsp[jz]
-enddo
-endif
+if bbb.isimpon >= 5:  #if [bbb.isimpon .ge. 5] then  # multi species impurity
+    nsm1=2*com.nhgsp
+    for igsp in range(nhgsp+1,com.ngsp): #do bbb.igsp=com.nhgsp+1,com.ngsp
+        jz=bbb.igsp-com.nhgsp
+        zn.append(bbb.znucl[nsm1+jz]) #zn[nsm1+jz]=bbb.znucl[nsm1+jz]
+        for ifld in range(com.nzsp[jz]): #do ifld=1,com.nzsp[jz]
+            zn.append(bbb.znucl[nsm1+ifld]) #zn[nsm1+jz+ifld]=bbb.znucl[nsm1+ifld]
+        #enddo
+        nsm1=nsm1+com.nzsp[jz]
+    #enddo
+#endif
 
 mdsput(".grid:zn","data($)",zn)
 mdsput(".grid.zn:basisname","data($)","bbb.see write_uedge2mds") # base 0,   (0:nx+1,0:ny+1,1:nstra)
@@ -404,11 +404,11 @@ mdsput(".grid:zn:comment","data($)","Nuclear charge of ion/neutral species")
 # placeholder for Coster's alf parameter, thermo-electric coefficient
 
 # B fields: poloidal, radial, toroidal, total
-real bppol[0:com.nx+1,0:com.ny+1]=com.com.bpol[,,0] # base 0,   (0:nxm+1,0:nym+1,0:4)
-real btor[0:com.nx+1,0:com.ny+1]=com.com.bphi[,,0] # base 0,   (0:nxm+1,0:nym+1,0:4)
-real brad[0:com.nx+1,0:com.ny+1]=com.com.br[,,0] # base 0,   (0:nxm+1,0:nym+1,0:4)
-real bbb.btot[0:com.nx+1,0:com.ny+1]=com.com.b[,,0] # base 0,   (0:nxm+1,0:nym+1,0:4) # base 0,   (0:nx+1,0:ny+1)
-mdsput(":b","build_signal[build_with_units[$,""T""],,\top.snapshot.grid:cr,\top.snapshot.grid:cz]",[bppol[0:com.nx+1,0:com.ny+1],brad[0:com.nx+1,0:com.ny+1],btor[0:com.nx+1,0:com.ny+1],bbb.btot[0:com.nx+1,0:com.ny+1]]]  # base 0,   (0:nxm+1,0:nym+1,0:4) # base 0,   (0:nx+1,0:ny+1)
+bppol = com.com.bpol[:,:,0] ### !!! real bppol[0:com.nx+1,0:com.ny+1]=com.com.bpol[,,0] # base 0,   (0:nxm+1,0:nym+1,0:4)
+btor = com.com.bphi[:,:,0] ### !!! real btor[0:com.nx+1,0:com.ny+1]=com.com.bphi[,,0] # base 0,   (0:nxm+1,0:nym+1,0:4)
+brad = com.com.br[:,:,0] ### !!! real brad[0:com.nx+1,0:com.ny+1]=com.com.br[,,0] # base 0,   (0:nxm+1,0:nym+1,0:4)
+bbb.btot[0:com.nx+1,0:com.ny+1]=com.com.b[:,:,0] #Can we do this??? ### !!! real bbb.btot[0:com.nx+1,0:com.ny+1]=com.com.b[,,0] # base 0,   (0:nxm+1,0:nym+1,0:4) # base 0,   (0:nx+1,0:ny+1)
+mdsput(":b","build_signal[build_with_units[$,""T""],,\top.snapshot.grid:cr,\top.snapshot.grid:cz]",[bppol[0:com.nx+1,0:com.ny+1],brad[0:com.nx+1,0:com.ny+1],btor[0:com.nx+1,0:com.ny+1],bbb.btot[0:com.nx+1,0:com.ny+1]])  # base 0,   (0:nxm+1,0:nym+1,0:4) # base 0,   (0:nx+1,0:ny+1)
 mdsput(":b:basisname","data($)","[com.com.bpol,com.br,com.bphi,com.b]") # base 0,   (0:nxm+1,0:nym+1,0:4) # base 0,   (0:nxm+1,0:nym+1,0:4) # base 0,   (0:nxm+1,0:nym+1,0:4) # base 0,   (0:nxm+1,0:nym+1,0:4)
 mdsput(":b:comment","data($)","magnetic field components [T]") # base 0,   (0:nxm+1,0:nym+1,0:4)
 
@@ -423,37 +423,37 @@ mdsput(":b:comment","data($)","magnetic field components [T]") # base 0,   (0:nx
 # placeholder for Coster's DP parameter, Dpa
 
 # Poloidal electric current [GDP] - referenced to east [X] face
-real fchx[0:com.nx,0:com.ny+1]=bbb.fqx[0:com.nx,0:com.ny+1] # base 0,   (0:nx+1,0:ny+1)
+fchx=bbb.fqx[0:com.nx,0:com.ny+1] # base 0,   (0:nx+1,0:ny+1)
 mdsput(":fchx","build_signal[build_with_units[$,""Amp""],,\top.snapshot.grid:cr_x,\top.snapshot.grid:cz_x,\top.snapshot:textpl]",fchx)
 mdsput(":fchx:basisname","data($)","bbb.fqx[0:com.nx,]") # base 0,   (0:nx+1,0:ny+1)
 mdsput(".fchx:comment","data($)","electric current across east face [Amp]")
 
 # Radial electric current - referenced to the north [Y] face
-real fchy[0:com.nx+1,0:com.ny]=bbb.fqy[0:com.ny+1,0:com.ny] # base 0,   (0:nx+1,0:ny+1)
+fchy=bbb.fqy[0:com.ny+1,0:com.ny] # base 0,   (0:nx+1,0:ny+1)
 mdsput(":fchy","build_signal[build_with_units[$,""Amp""],,\top.snapshot.grid:cr_y,\top.snapshot.grid:cz_y,\top.snapshot:textpl]",fchy)
 mdsput(":fchy:basisname","data($)","fqyy[,0:com.ny]")
 mdsput(".fchy:comment","data($)","electric current across north face [Amp]")
 
 # Poloidal electron energy flux, east [X] face
-real fhex[0:com.nx,0:com.ny+1]=bbb.feex[0:com.nx,] # base 0,   (0:nx+1,0:ny+1)
+fhex=bbb.feex[0:com.nx,:] # base 0,   (0:nx+1,0:ny+1)
 mdsput(":fhex","build_signal[build_with_units[$,""W""],,\top.snapshot.grid:cr_x,\top.snapshot.grid:cz_x]",fhex)
 mdsput(":fhex:basisname","data($)","bbb.feex[0:com.nx,]") # base 0,   (0:nx+1,0:ny+1)
 mdsput(".fhex:comment","data($)","electron energy flow across east face [W]")
 
 # Radial electron energy, north [Y] face
-real fhey[0:com.nx+1,0:com.ny]=bbb.feey[,0:com.ny] # base 0,   (0:nx+1,0:ny+1)
+fhey=bbb.feey[:,0:com.ny] # base 0,   (0:nx+1,0:ny+1)
 mdsput(":fhey","build_signal[build_with_units[$,""W""],,\top.snapshot.grid:cr_y,\top.snapshot.grid:cz_y]",fhey)
 mdsput(":fhey:basisname","data($)","bbb.feey[,0:com.ny]") # base 0,   (0:nx+1,0:ny+1)
 mdsput(".fhey:comment","data($)","electron energy flow across north face [W]")
 
 # Total poloidal ion energy flux of each species, east [X] face
-real fhix[0:com.nx,0:com.ny+1]=bbb.feix[0:com.nx,] # base 0,   (0:nx+1,0:ny+1)
+fhix=bbb.feix[0:com.nx,:] # base 0,   (0:nx+1,0:ny+1)
 mdsput(":fhix","build_signal[build_with_units[$,""W""],,\top.snapshot.grid:cr_x,\top.snapshot.grid:cz_x]",fhix)
 mdsput(":fhix:basisname","data($)","bbb.feix[0:com.nx,]") # base 0,   (0:nx+1,0:ny+1)
 mdsput(".fhix:comment","data($)","Ion energy flow across east face [W]")
 
 # Total radial ion energy, north [Y] face
-real fhiy[0:com.nx+1,0:com.ny]=bbb.feiy[,0:com.ny] # base 0,   (0:nx+1,0:ny+1)
+fhiy=bbb.feiy[:,0:com.ny] # base 0,   (0:nx+1,0:ny+1)
 mdsput(":fhiy","build_signal[build_with_units[$,""W""],,\top.snapshot.grid:cr_y,\top.snapshot.grid:cz_y]",fhiy)
 mdsput(":fhiy:basisname","data($)","bbb.feiy[,0:com.ny]") # base 0,   (0:nx+1,0:ny+1)
 mdsput(".fhiy:comment","data($)","Ion energy flow across north face [W]")
@@ -471,20 +471,20 @@ mdsput(".fhiy:comment","data($)","Ion energy flow across north face [W]")
 # place holder for Coster's fhty parameter, Radial  total energy flux
 
 # Poloidal momentum current, east [X] face - resolved for all species 
-real fmox[0:com.nx,0:com.ny+1,2]
-fmox[,,1]=0
-if [bbb.isupgon[1] .eq. 1] fmox[,,1]=bbb.fmix[0:com.nx,,2] # base 0,   (0:nx+1,0:ny+1,1:nusp)
-fmox[,,2]=bbb.fmix[0:com.nx,,1] # base 0,   (0:nx+1,0:ny+1,1:nusp)
+fmox = np.zeros((com.nx,com.ny+1,2)) ### !!! real fmox[0:com.nx,0:com.ny+1,2]
+#fmox[,,1]=0
+if (bbb.isupgon[1] == 1): fmox[:,:,1]=bbb.fmix[0:com.nx,:,2] ### !!! if [bbb.isupgon[1] .eq. 1] fmox[,,1]=bbb.fmix[0:com.nx,,2] # base 0,   (0:nx+1,0:ny+1,1:nusp)
+fmox[:,:,2]=bbb.fmix[0:com.nx,:,1] # base 0,   (0:nx+1,0:ny+1,1:nusp)
 
 mdsput(":fmox","build_signal[build_with_units[$,""Nwt""],,\top.snapshot.grid:cr_x,\top.snapshot.grid:cz_x,\top.snapshot:textpl[0:1]]",fmox)
 mdsput(":fmox:basisname","data($)","bbb.fmix[0:com.nx,,]") # base 0,   (0:nx+1,0:ny+1,1:nusp)
 mdsput(".fmox:comment","data($)","momentum across east face [Nwt]")
 
 # Radial particle flux, north [Y] face  - resolved for all species 
-real fmoy[0:com.nx+1,0:com.ny,2]
-fmoy[,,1]=0.
-if [bbb.isupgon[1] .eq. 1] fmoy[,,1]=bbb.fmiy[,0:com.ny,2] # base 0,   (0:nx+1,0:ny+1,1:nusp)
-fmoy[,,2]=bbb.fmiy[,0:com.ny,1] # base 0,   (0:nx+1,0:ny+1,1:nusp)
+fmoy = np.empty((com.nx+1,com.ny,2))### !!! real fmoy[0:com.nx+1,0:com.ny,2]
+fmoy[:,:,1]=0.0
+if (bbb.isupgon[1] == 1): fmoy[:,:,1]=bbb.fmiy[:,0:com.ny,2] ### !!! if [bbb.isupgon[1] .eq. 1] fmoy[,,1]=bbb.fmiy[,0:com.ny,2] # base 0,   (0:nx+1,0:ny+1,1:nusp)
+fmoy[:,:,2]=bbb.fmiy[:,0:com.ny,1] # base 0,   (0:nx+1,0:ny+1,1:nusp)
 
 mdsput(":fmoy","build_signal[build_with_units[$,""Nwt""],,\top.snapshot.grid:cr_y,\top.snapshot.grid:cz_y,\top.snapshot:textpl[0:1]]",fmoy)
 mdsput(":fmoy:basisname","data($)","bbb.fmiy[,0:com.ny,]") # base 0,   (0:nx+1,0:ny+1,1:nusp)
@@ -492,25 +492,25 @@ mdsput(".fmoy:comment","data($)"," momentum across north face [Nwt]")
 
 # Poloidal particle current, east [X] face - resolved for all species 
 # don't use bbb.fnax for variable since already exists
-real fncx[0:com.nx,0:com.ny+1,ns]
-integer bbb.igsp,ifld,ii
+fncx = np.empty((com.nx,com.ny+1,ns)) ### !!! real fncx[0:com.nx,0:com.ny+1,ns]
+###integer bbb.igsp,ifld,ii
 # note this indexing does not com.work if there is more than api.one inertial neutral
-do ii=1,com.nhgsp
-fncx[,,2*[ii-1]+1]=bbb.fngx[0:com.nx,,ii] # base 0,   (0:nx+1,0:ny+1,1:ngsp)
-fncx[,,2*[ii-1]+2]=bbb.fnix[0:com.nx,,ii] # base 0,   (0:nx+1,0:ny+1,1:nisp)
-enddo
+for ii in range(com.nhgsp): ### do ii=1,com.nhgsp
+    fncx[:,:,2*[ii-1]+1]=bbb.fngx[0:com.nx,:,ii] # base 0,   (0:nx+1,0:ny+1,1:ngsp)
+    fncx[:,:,2*[ii-1]+2]=bbb.fnix[0:com.nx,:,ii] # base 0,   (0:nx+1,0:ny+1,1:nisp)
+#enddo
 
-if [bbb.isimpon .ge. 5] then  # multi species impurities
-integer nsm1=2*com.nhgsp
-do bbb.igsp=com.nhgsp+1,com.ngsp
-integer jz=bbb.igsp-com.nhgsp
-fncx[,,nsm1+jz]=bbb.fngx[0:com.nx,,jz] # base 0,   (0:nx+1,0:ny+1,1:ngsp)
-do ifld=1,com.nzsp[jz]
-fncx[,,nsm1+jz+ifld]=bbb.fnix[0:com.nx,,nsm1+ifld] # base 0,   (0:nx+1,0:ny+1,1:nisp)
-enddo
-nsm1=nsm1+com.nzsp[jz]
-enddo
-endif
+if (bbb.isimpon >=  5):  # multi species impurities
+    nsm1=2*com.nhgsp
+    for igsp in range(com.nhgsp+1,com.ngsp): #do bbb.igsp=com.nhgsp+1,com.ngsp
+        jz=bbb.igsp-com.nhgsp
+        fncx[:,:,nsm1+jz]=bbb.fngx[0:com.nx,:,jz] # base 0,   (0:nx+1,0:ny+1,1:ngsp)
+        for ifld in range (com.nzsp[jz]):
+            fncx[:,:,nsm1+jz+ifld]=bbb.fnix[0:com.nx,:,nsm1+ifld] # base 0,   (0:nx+1,0:ny+1,1:nisp)
+        #enddo
+        nsm1=nsm1+com.nzsp[jz]
+    #enddo
+#endif
 
 mdsput(":fnax","build_signal[build_with_units[$,""s-1""],,\top.snapshot.grid:cr_x,\top.snapshot.grid:cz_x,\top.snapshot:textpl]",fncx)
 mdsput(":fnax:basisname","data($)","bbb.fngx[0:com.nx,,] and bbb.fnix[0:com.nx,,]") # base 0,   (0:nx+1,0:ny+1,1:nisp) # base 0,   (0:nx+1,0:ny+1,1:ngsp)
@@ -522,25 +522,25 @@ mdsput(":fnax:comment","data($)","particle current across east face [s^-1]")
 
 # Radial particle flux, north [Y] face  - resolved for all species 
 # don't use bbb.fnay for variable since it already exists
-real fncy[0:com.nx+1,0:com.ny,ns]
-integer bbb.igsp,ifld,ii
+fncy = np.zeros((com.nx+1,com.ny,ns))### !!! real fncy[0:com.nx+1,0:com.ny,ns]
+#integer bbb.igsp,ifld,ii
 # note this indexing does not com.work if there is more than api.one inertial neutral
-do ii=1,com.nhgsp
-fncy[,,2*[ii-1]+1]=bbb.fngy[,0:com.ny,ii] # base 0,   (0:nx+1,0:ny+1,1:ngsp)
-fncy[,,2*[ii-1]+2]=bbb.fniy[,0:com.ny,ii] # base 0,   (0:nx+1,0:ny+1,1:nisp)
-enddo
+for ii in range(com.nhgsp): #do ii=1,com.nhgsp
+    fncy[:,:,2*ii]=bbb.fngy[:,0:com.ny,ii] # base 0,   (0:nx+1,0:ny+1,1:ngsp)
+    fncy[:,:,2*ii+1]=bbb.fniy[:,0:com.ny,ii] # base 0,   (0:nx+1,0:ny+1,1:nisp)
+#enddo
 
-if [bbb.isimpon .ge. 5] then  # multi species impurities
-integer nsm1=2*com.nhgsp
-do bbb.igsp=com.nhgsp+1,com.ngsp
-integer jz=bbb.igsp-com.nhgsp
-fncy[,,nsm1+jz]=bbb.fngy[,0:com.ny,jz] # base 0,   (0:nx+1,0:ny+1,1:ngsp)
-do ifld=1,com.nzsp[jz]
-fncy[,,nsm1+jz+ifld]=bbb.fniy[,0:com.ny,nsm1+ifld] # base 0,   (0:nx+1,0:ny+1,1:nisp)
-enddo
-nsm1=nsm1+com.nzsp[jz]
-enddo
-endif
+if (bbb.isimpon >= 5):  # multi species impurities
+    nsm1=2*com.nhgsp
+    for bbb.igsp in range(com.nhgsp+1,com.ngsp):
+        jz=bbb.igsp-com.nhgsp
+        fncy[:,:,nsm1+jz]=bbb.fngy[:,0:com.ny,jz]#fncy[:,:,nsm1+jz]=bbb.fngy[:,0:com.ny,jz] # base 0,   (0:nx+1,0:ny+1,1:ngsp)
+        for ifld in range(com.nzsp[jz]):
+            fncy[:,:,nsm1+jz+ifld]=bbb.fniy[:,0:com.ny,nsm1+ifld] # base 0,   (0:nx+1,0:ny+1,1:nisp)
+        #enddo
+    nsm1=nsm1+com.nzsp[jz]
+    #enddo
+#endif
 
 mdsput(":fnay","build_signal[build_with_units[$,""s-1""],,\top.snapshot.grid:cr_y,\top.snapshot.grid:cz_y,\top.snapshot:textpl]",fncy)
 mdsput(":fnay:basisname","data($)","bbb.fngy[,0:com.ny,] and bbb.fniy[,0:com.ny,]") # base 0,   (0:nx+1,0:ny+1,1:nisp) # base 0,   (0:nx+1,0:ny+1,1:ngsp)
@@ -551,13 +551,13 @@ mdsput(":fnay:comment","data($)","particle current across north face [s^-1]")
 # placeholder for Coster fnay_52 parameter, Radial particle flux [5/2 piece]
 
 # hx, length of cell
-real hx[0:com.nx+1,0:com.ny+1]=1/com.gx # base 0,   (0:nx+1,0:ny+1)
+hx = np.full((com.nx+1,com.ny+1), 1/com.gx) ### !!! real hx[0:com.nx+1,0:com.ny+1]=1/com.gx # base 0,   (0:nx+1,0:ny+1)
 mdsput(":hx","build_signal[build_with_units[$,""grd.m""],,\top.snapshot.grid:cr,\top.snapshot.grid:cz]",hx)
 mdsput(":hx:basisname","data($)","1/com.gx") # base 0,   (0:nx+1,0:ny+1)
 mdsput(".hx:comment","data($)","length of primary cells [grd.m]")
 
 # hy, width of cell
-real hy[0:com.nx+1,0:com.ny+1]=1/com.gy # base 0,   (0:nx+1,0:ny+1)
+hy = np.full((com.nx+1,com.ny+1), 1/com.gy) ### !!! real hy[0:com.nx+1,0:com.ny+1]=1/com.gy # base 0,   (0:nx+1,0:ny+1)
 mdsput(":hy","build_signal[build_with_units[$,""grd.m""],,\top.snapshot.grid:cr,\top.snapshot.grid:cz]",hy)
 mdsput(":hy:basisname","data($)","1/com.gy") # base 0,   (0:nx+1,0:ny+1)
 mdsput(".hy:comment","data($)","width of primary cells [grd.m]")
@@ -571,26 +571,26 @@ mdsput(".hy:comment","data($)","width of primary cells [grd.m]")
 # place holder for Coster's kyi0 parameter, kyi0
 
 # Neutral/ion density
-real iondens[0:com.nx+1,0:com.ny+1,ns]
+iondens = np.zeros(com.nx+1,com.ny+1,ns)
 
-integer bbb.igsp,ifld,ii
+### integer bbb.igsp,ifld,ii
 # note this indexing does not com.work if there is more than api.one inertial neutral
-do ii=1,com.nhgsp
-iondens[,,2*[ii-1]+1]=bbb.ng[,,ii] # base 0,   (0:nx+1,0:ny+1,1:ngsp)
-iondens[,,2*[ii-1]+2]=bbb.ni[,,ii] # base 0,   (0:nx+1,0:ny+1,1:nisp)
-enddo
+for ii in range(com.nhgsp):
+    iondens[:,:,2*ii]=bbb.ng[:,:,ii] # base 0,   (0:nx+1,0:ny+1,1:ngsp)
+    iondens[:,:,2*ii+1]=bbb.ni[:,:,ii] # base 0,   (0:nx+1,0:ny+1,1:nisp)
+#enddo
 
-if [bbb.isimpon .ge. 5] then  # multi species impurities
-integer nsm1=2*com.nhgsp
-do bbb.igsp=com.nhgsp+1,com.ngsp
-integer jz=bbb.igsp-com.nhgsp
-iondens[,,nsm1+jz]=bbb.ng[,,bbb.igsp] # base 0,   (0:nx+1,0:ny+1,1:ngsp)
-do ifld=1,com.nzsp[jz]
-iondens[,,nsm1+jz+ifld]=bbb.ni[,,nsm1+ifld] # base 0,   (0:nx+1,0:ny+1,1:nisp)
-enddo
-nsm1=nsm1+com.nzsp[jz]
-enddo
-endif
+if (bbb.isimpon >= 5): # multi species impurities
+    nsm1=2*com.nhgsp
+    for bbb.igsp in range(com.nhgsp+1,com.ngsp):
+        jz=bbb.igsp-com.nhgsp
+        iondens[:,:,nsm1+jz]=bbb.ng[:,:,bbb.igsp] # base 0,   (0:nx+1,0:ny+1,1:ngsp)
+        for ifld in range(com.nzsp[jz]):
+            iondens[:,:,nsm1+jz+ifld]=bbb.ni[:,:,nsm1+ifld] # base 0,   (0:nx+1,0:ny+1,1:nisp)
+        #enddo
+    nsm1=nsm1+com.nzsp[jz]
+    #enddo
+#endif
 
 mdsput(":na","build_signal[build_with_units[$,""grd.m-3""],,\top.snapshot.grid:cr,\top.snapshot.grid:cz,\top.snapshot:textpl]",iondens) # base 0,   (0:nx+1,0:ny+1)
 mdsput(":na:basisname","data($)","bbb.ng[,,] and bbb.ni[,,]") # base 0,   (0:nx+1,0:ny+1,1:nisp) # base 0,   (0:nx+1,0:ny+1,1:ngsp) # base 0,   (0:nx+1,0:ny+1)
@@ -631,11 +631,11 @@ mdsput(":pr:comment","data($)","Pressure in primary cells [J/m3]") # base 0,   (
 # Electron cooling api.rate
 # TDR: Total electron energy input = bbb.vsoree[,]/com.vol[,] [W/m3] hydrogenic loss # base 0,   (0:nx+1,0:ny+1) # base 0,   (0:nx+1,0:ny+1)
 #      Total electron energy loss  = bbb.pwrze[,]         [W/m3] impurity loss # base 0,   (0:nx+1,0:ny+1)
-if [bbb.isimpon .ge. 5] then
-real rqahe[0:com.nx+1,0:com.ny+1]=-bbb.vsoree[,]/com.vol[,]+bbb.pwrze[,] # base 0,   (0:nx+1,0:ny+1) # base 0,   (0:nx+1,0:ny+1) # base 0,   (0:nx+1,0:ny+1)
-else
-real rqahe[0:com.nx+1,0:com.ny+1]=-bbb.vsoree[,]/com.vol[,] # base 0,   (0:nx+1,0:ny+1) # base 0,   (0:nx+1,0:ny+1)
-endif
+if (bbb.isimpon >= 5):
+    rqahe = -bbb.vsoree[:,:]/com.vol[:,:]+bbb.pwrze[:,:] #rqahe = np.[0:com.nx+1,0:com.ny+1]=-bbb.vsoree[,]/com.vol[,]+bbb.pwrze[,] # base 0,   (0:nx+1,0:ny+1) # base 0,   (0:nx+1,0:ny+1) # base 0,   (0:nx+1,0:ny+1)
+else:
+    rqahe = -bbb.vsoree[:,:]/com.vol[:,:] #rqahe[0:com.nx+1,0:com.ny+1]=-bbb.vsoree[,]/com.vol[,] # base 0,   (0:nx+1,0:ny+1) # base 0,   (0:nx+1,0:ny+1)
+#endif
 
 mdsput(":rqahe","build_signal[build_with_units[$,""W/m3""],,]",rqahe)
 mdsput(":rqahe:basisname","data($)","bbb.see write_uedge2mds") # base 0,   (0:nx+1,0:ny+1,1:nstra)
@@ -665,7 +665,7 @@ mdsput(":sx:basisname","data($)","com.sx[0:com.nx,]") # base 0,   (0:nx+1,0:ny+1
 mdsput(":sx:comment","data($)","area of east face of primary cells [grd.m^2]") # base 0,   (0:nx+1,0:ny+1)
 
 # com.sy # base 0,   (0:nx+1,0:ny+1)
-mdsput(":sy","build_signal[build_with_units[$,""m2""],,]",com.sy[,0:com.ny]) # base 0,   (0:nx+1,0:ny+1)
+mdsput(":sy","build_signal[build_with_units[$,""m2""],,]",com.sy[:,0:com.ny]) # base 0,   (0:nx+1,0:ny+1)
 mdsput(":sy:basisname","data($)","com.sy[,0:com.ny]") # base 0,   (0:nx+1,0:ny+1)
 mdsput(":sy:comment","data($)","area of north face of primary cells [grd.m^2]") # base 0,   (0:nx+1,0:ny+1)
 
@@ -685,69 +685,69 @@ mdsput(":te:comment","data($)","electron temperature in primary cell [eV]") # ba
 # place holder for Coster's TEXTMN parameter, Molecular species
 
 # Define species: 1=D0, 2=D+, 3=Imp0, 4,... = C+,++, ...
-character*2 hydrogen[0:1]=["H0","H+"]
-character*2 deuterium[0:1]=["D0","D+"]
-character*2 tritium[0:1]=["T0","T+"]
-character*4 helium[0:2]=["He0","He+","He2+"]
-character*4 lithium[0:3]=["Li0","Li+","Li2+","Li3+"]
-character*4 berllyium[0:4]=["Be0","Be+","Be2+","Be3+","Be4+"]
-character*3 boron[0:5]=["B0","B+","B2+","B3+","B4+","B5+"]
-character*3 carbon[0:6]=["C0","C+","C2+","C3+","C4+","C5+","C6+"]
-character*3 nitrogen[0:7]=["N0","N+","N2+","N3+","N4+","N5+","N6+","N7+"]
-character*3 oxygen[0:8]=["O0","O+","O2+","O3+","O4+","O5+","O6+","O7+", \
+hydrogen=["H0","H+"]
+deuterium=["D0","D+"]
+tritium=["T0","T+"]
+helium=["He0","He+","He2+"]
+lithium=["Li0","Li+","Li2+","Li3+"]
+berllyium=["Be0","Be+","Be2+","Be3+","Be4+"]
+boron=["B0","B+","B2+","B3+","B4+","B5+"]
+carbon=["C0","C+","C2+","C3+","C4+","C5+","C6+"]
+nitrogen=["N0","N+","N2+","N3+","N4+","N5+","N6+","N7+"]
+oxygen=["O0","O+","O2+","O3+","O4+","O5+","O6+","O7+", \
  "O8+"]
-character*3 fluorine[0:9]=["F0","F+","F2+","F3+","F4+","F5+","F6+","F7+", \
+fluorine=["F0","F+","F2+","F3+","F4+","F5+","F6+","F7+", \
    "F8+","F9+"]
-character*5 neon[0:10]=["Ne0","Ne+","Ne2+","Ne3+","Ne4+","Ne5+","Ne6+", \
+neon=["Ne0","Ne+","Ne2+","Ne3+","Ne4+","Ne5+","Ne6+", \
 "Ne7+","Ne8+","Ne9+","Ne10+"]
 
 # Assume first neutral and ion species is an isotope of hydrogen
-if [bbb.znucl[1]==1] then
-if [bbb.minu[1] .eq. 1.] then
-character*5 textpl[ns]=hydrogen
-elseif [bbb.minu[1] .eq. 2.] then
-character*5 textpl[ns]=deuterium
-elseif [bbb.minu[1] .eq. 3.] then
-character*5 textpl[ns]=tritium
-endif
-else
-remark "First species is not bbb.a hydrogen isotope!"
-mdsclose
-mdsdisconnect
-call kaboom[-1]
-endif
+if (bbb.znucl[1]==1):
+    if (bbb.minu[1] == 1.0):
+        textpl[ns]=hydrogen
+    elif (bbb.minu[1] == 2.0):
+        textpl[ns]=deuterium
+    elif (bbb.minu[1] == 3.0):
+        textpl[ns]=tritium
+    #endif
+else:
+### !!! Needs more information!    remark "First species is not bbb.a hydrogen isotope!"
+### !!! mdsclose
+### !!! mdsdisconnect
+    print("something") ### !!! call kaboom[-1]
+#endif
 
-if [bbb.isimpon .gt. 5] then
-integer nsm1=2*com.nhgsp
-do ii=com.nhgsp+1,com.ngsp
-integer jz=ii-com.nhgsp
-if [bbb.znucl[nsm1+1] .eq. 2] then
-textpl=[textpl[1:nsm1],helium[0:com.nzsp[jz]]]
-elseif [bbb.znucl[nsm1+1] .eq. 3] then
-textpl=[textpl[1:nsm1],lithium[0:com.nzsp[jz]]]
-elseif [bbb.znucl[nsm1+1] .eq. 4] then
-textpl=[textpl[1:nsm1],berllyium[0:com.nzsp[jz]]]
-elseif [bbb.znucl[nsm1+1] .eq. 5] then
-textpl=[textpl[1:nsm1],boron[0:com.nzsp[jz]]]
-elseif [bbb.znucl[nsm1+1] .eq. 6] then
-textpl=[textpl[1:nsm1],carbon[0:com.nzsp[jz]]]
-elseif [bbb.znucl[nsm1+1] .eq. 7] then
-textpl=[textpl[1:nsm1],nitrogen[0:com.nzsp[jz]]]
-elseif [bbb.znucl[nsm1+1] .eq. 8] then
-textpl=[textpl[1:nsm1],oxygen[0:com.nzsp[jz]]]
-elseif [bbb.znucl[nsm1+1] .eq. 9] then
-textpl=[textpl[1:nsm1],fluorine[0:com.nzsp[jz]]]
-elseif [bbb.znucl[nsm1+1] .eq. 10] then
-textpl=[textpl[1:nsm1],neon[0:com.nzsp[jz]]]
-else
-remark "Impurity species is greater than Ne!"
-mdsclose
-mdsdisconnect
-call kaboom[-1]
-endif
-nsm1=nsm1+com.nzsp[jz]+1
-enddo
-endif
+if (bbb.isimpon > 5):
+    nsm1=2*com.nhgsp
+    for ii in range(com.nhgsp+1,com.ngsp):
+        jz=ii-com.nhgsp
+        if (bbb.znucl[nsm1+1] == 2):
+            textpl=[textpl[1:nsm1],helium[0:com.nzsp[jz]]]
+        elif (bbb.znucl[nsm1+1] == 3): 
+            textpl=[textpl[1:nsm1],lithium[0:com.nzsp[jz]]]
+        elif (bbb.znucl[nsm1+1] == 4):
+            textpl=[textpl[1:nsm1],berllyium[0:com.nzsp[jz]]]
+        elif (bbb.znucl[nsm1+1] == 5):
+            textpl=[textpl[1:nsm1],boron[0:com.nzsp[jz]]]
+        elif (bbb.znucl[nsm1+1] == 6):
+            textpl=[textpl[1:nsm1],carbon[0:com.nzsp[jz]]]
+        elif (bbb.znucl[nsm1+1] == 7):
+            textpl=[textpl[1:nsm1],nitrogen[0:com.nzsp[jz]]]
+        elif (bbb.znucl[nsm1+1] == 8):
+            textpl=[textpl[1:nsm1],oxygen[0:com.nzsp[jz]]]
+        elif (bbb.znucl[nsm1+1] == 9):
+            textpl=[textpl[1:nsm1],fluorine[0:com.nzsp[jz]]]
+        elif (bbb.znucl[nsm1+1] == 10):
+            textpl=[textpl[1:nsm1],neon[0:com.nzsp[jz]]]
+        else:
+            print("commented block line 743")#remark "Impurity species is greater than Ne!"
+            #mdsclose
+            #mdsdisconnect
+            #call kaboom[-1]
+        #endif
+        nsm1=nsm1+com.nzsp[jz]+1
+    #enddo
+#endif
 
 mdsput(".textpl","data($)",textpl)
 mdsput(".textpl:basisname","data($)","no corresponding BASIS variable")
@@ -764,27 +764,27 @@ mdsput(":ti:comment","data($)","Ion temperature in primary cell [eV]") # base 0,
 
 # [Neutral]/Ion parallel velocity
 # Diffusive neutral carbon model, hence set carbon neutral velocity to api.zero
-real ua[0:com.nx,0:com.ny+1,ns]
-integer bbb.igsp,ifld,ii
-if [com.nhgsp .gt. 1] then
-remark "Not implemented for more than api.one hydrogen species!"
-call kaboom[-1]
-endif
-ua[,,1]=0.
-if [bbb.isupgon[1] .eq. 1] ua[,,1]=bbb.upi[0:com.nx,,bbb.iigsp] # base 0,   (0:nx+1,0:ny+1,1:nisp)
-ua[,,2]=bbb.upi[0:com.nx,,1] # base 0,   (0:nx+1,0:ny+1,1:nisp)
+ua = np.zeros(com.nx,com.ny+1,ns) ### !!! real ua[0:com.nx,0:com.ny+1,ns]
+#integer bbb.igsp,ifld,ii
+if (com.nhgsp > 1):
+    print("commented block") #remark "Not implemented for more than api.one hydrogen species!"
+    #call kaboom[-1]
+#endif
+ua[:,:,1]=0.
+if (bbb.isupgon[1] == 1): ua[:,:,1]=bbb.upi[0:com.nx,:,bbb.iigsp] # base 0,   (0:nx+1,0:ny+1,1:nisp)
+ua[:,:,2]=bbb.upi[0:com.nx,:,1] # base 0,   (0:nx+1,0:ny+1,1:nisp)
 
-if [bbb.isimpon .ge. 5] then  # multi species impurities
-integer nsm1=2*com.nhgsp
-do bbb.igsp=com.nhgsp+1,com.ngsp
-integer jz=bbb.igsp-com.nhgsp
-ua[,,nsm1+jz]=0.   # impurity neutrals are diffusive
-do ifld=1,com.nzsp[jz]
-ua[,,nsm1+jz+ifld]=bbb.upi[0:com.nx,,nsm1+ifld] # base 0,   (0:nx+1,0:ny+1,1:nisp)
-enddo
-nsm1=nsm1+com.nzsp[jz]
-enddo
-endif
+if (bbb.isimpon == 5):  # multi species impurities
+    nsm1=2*com.nhgsp
+    for bbb.igsp in range(com.nhgsp+1,com.ngsp):
+        jz=bbb.igsp-com.nhgsp
+        ua[:,:,nsm1+jz]=0.   # impurity neutrals are diffusive
+        for ifld in range(com.nzsp[jz]):
+            ua[:,:,nsm1+jz+ifld]=bbb.upi[0:com.nx,:,nsm1+ifld] # base 0,   (0:nx+1,0:ny+1,1:nisp)
+        #enddo
+    nsm1=nsm1+com.nzsp[jz]
+    #enddo
+#endif
 
 mdsput(":ua","build_signal[build_with_units[$,""grd.m/s""],,\top.snapshot.grid:cr,\top.snapshot.grid:cz,\top.snapshot:textpl]",ua)
 mdsput(":ua:basisname","data($)","bbb.upi") # base 0,   (0:nx+1,0:ny+1,1:nisp)
@@ -818,15 +818,15 @@ mdssetdefault["\top.ident"]
 # place holder for Coster's parameter BWFSTATIID, md5sum hash of b2stati
 
 # Date written to database
-character*8 date=infodate
+date=infodate
 mdsput(":date","data($)",date)
 mdsput(".date:comment","data($)","Date information written to MDSplus")
 
 # Directory in which the run was stored [GDP]
 basisexe["pwd > pwd.txt"]
-integer unit=basopen["pwd.txt","r"]
-character*80 rundir
-basreadline[unit,&rundir]
+unit=basopen["pwd.txt","r"]
+# character*80 rundir
+rundir = uasreadline[unit] ### !!! uasreadline[unit,&rundir]
 basclose[unit]
 rundir=trim[rundir]
 #!com.rm pwd.txt # base 0,   (0:nxm+1,0:nym+1,0:4)
@@ -834,13 +834,13 @@ mdsput(".directory","data($)",rundir)
 mdsput(".directory:comment","data($)","Directory used for save files, etc.")
 
 # Identity for Experiment
-if [exists["machine"]] then
-mdsput(":exp","data($)",machine)
-mdsput(".exp:comment","data($)","Experiment name")
-else
-mdsput(":exp","data($)","n/bbb.a")
-mdsput(".exp:comment","data($)","Experiment name not specified")
-endif
+if (exists["machine"]):
+    mdsput(":exp","data($)",machine)
+    mdsput(".exp:comment","data($)","Experiment name")
+else:
+    mdsput(":exp","data($)","n/bbb.a")
+    mdsput(".exp:comment","data($)","Experiment name not specified")
+#endif
 
 # Geometry
 mdsput(":com.geometry","data($)",com.geometry)
@@ -848,7 +848,7 @@ mdsput(".com.geometry:basisname","data($)","com.geometry")
 mdsput(".com.geometry:comment","data($)","mnemonic for com.geometry")
 
 # Host identification
-character*10 temp=infohost
+temp=infohost
 mdsput(":host","data($)",temp)
 mdsput(".host:comment","data($)","host running on when write to MDSplus")
 
@@ -882,17 +882,17 @@ mdsput(".shot:comment","data($)","Experiment shot number")
 
 # List of plasma species
 # concatenate components of textpl to form Coster's character string
-character*5 cstrspcs=textpl[1]
-integer ii
-do ii=2,ns
-integer iii=ii*5
-character*iii cstrspcs=cstrspcs//textpl[ii]
-enddo
+cstrspcs=textpl[1]
+# integer ii
+for ii in range(2,ns):
+    #iii=ii*5
+    cstrspcs+=textpl[ii] ### !!! character*iii cstrspcs=cstrspcs//textpl[ii]
+#enddo
 mdsput(".species","data($)",cstrspcs)
 mdsput(".species:basisname","data($)","bbb.see write_uedge2mds") # base 0,   (0:nx+1,0:ny+1,1:nstra)
 mdsput(".species:comment","data($)","Character string of plasma species")
 
-real temp=com.etime*1.e-3
+temp=com.etime*1.e-3
 mdsput(":time","data($)",temp)
 mdsput(".time:basisname","data($)","com.etime*1.e-3")
 mdsput(".time:comment","data($)","Experiment shot time [s]")
@@ -905,9 +905,9 @@ mdsput(".uedgeversion:comment","data($)","UEDGE version number")
 
 # user [GDP]
 #!whoami > pwd.txt
-integer unit=basopen["pwd.txt","r"]
-character*80 whoami
-basreadline[unit,&whoami]
+unit=basopen["pwd.txt","r"]
+#character*80 whoami
+whoami = basreadline[unit] ### !!! basreadline[unit,&whoami]
 basclose[unit]
 whoami=trim[whoami]
 #!com.rm pwd.txt # base 0,   (0:nxm+1,0:nym+1,0:4)
@@ -1023,28 +1023,28 @@ mdsput(".ompsep:ti:comment","data($)","Ion temperature at OMP separatrix, [eV]")
 # store IDENT.SEP
 
 # Core-SOL electron energy flow [W]
-real fhe=par.sum[bbb.feey[com.ixpt1+1:com.ixpt2,com.iysptrx]] # base 0,   (0:nx+1,0:ny+1)
+fhe=par.sum[bbb.feey[com.ixpt1+1:com.ixpt2,com.iysptrx]] # base 0,   (0:nx+1,0:ny+1)
 mdsput(".sep:fhe","data($)",fhe)
 mdsput(".sep:fhe:basisname","data($)","bbb.see write_uedge2mds") # base 0,   (0:nx+1,0:ny+1,1:nstra)
 mdsput(".sep:fhe:comment","data($)","electron energy flow across separatrix [W]")
 
 # Core-SOL ion energy flow [W]
-real fhi=par.sum[bbb.feiy[com.ixpt1+1:com.ixpt2,com.iysptrx]] # base 0,   (0:nx+1,0:ny+1)
+fhi=par.sum[bbb.feiy[com.ixpt1+1:com.ixpt2,com.iysptrx]] # base 0,   (0:nx+1,0:ny+1)
 mdsput(".sep:fhi","data($)",fhi)
 mdsput(".sep:fhi:basisname","data($)","bbb.see write_uedge2mds") # base 0,   (0:nx+1,0:ny+1,1:nstra)
 mdsput(".sep:fhi:comment","data($)","Ion energy flow across separatrix [W]")
 
 # Core-SOL electron flow [W] [per GDP]
-real fne[0:com.nx+1,1:com.nisp]
-do ii=1,com.nisp
-fne[0:com.nx+1,ii]=bbb.fniy[,com.iysptrx,ii]*api.bbb.zi[ii]-bbb.fqy[,com.iysptrx]/bbb.qe # base 0,   (0:nx+1,0:ny+1) # base 0,   (0:nx+1,0:ny+1,1:nisp)
-enddo
-mdsput(".sep:fne","data($)",par.sum[fne[com.ixpt1+1:com.ixpt2,]])
+fne = np.zeros((com.nx+1,com.nisp))
+for ii in range(com.nisp):
+    fne[0:com.nx+1,ii]=bbb.fniy[:,com.iysptrx,ii]*api.bbb.zi[ii]-bbb.fqy[:,com.iysptrx]/bbb.qe # base 0,   (0:nx+1,0:ny+1) # base 0,   (0:nx+1,0:ny+1,1:nisp)
+#enddo
+mdsput(".sep:fne","data($)",par.sum[fne[com.ixpt1+1:com.ixpt2,:]])
 mdsput(".sep:fne:basisname","data($)","bbb.see write_uedge2mds") # base 0,   (0:nx+1,0:ny+1,1:nstra)
 mdsput(".sep:fne:comment","data($)","Electron flux across separatrix [/s]")
 
 # Core-SOL ion flow [W]
-real fni=par.sum[bbb.fniy[com.ixpt1+1:com.ixpt2,com.iysptrx,1:com.nisp]] # base 0,   (0:nx+1,0:ny+1,1:nisp)
+fni=par.sum[bbb.fniy[com.ixpt1+1:com.ixpt2,com.iysptrx,1:com.nisp]] # base 0,   (0:nx+1,0:ny+1,1:nisp)
 mdsput(".sep:fni","data($)",fni)
 mdsput(".sep:fni:basisname","data($)","bbb.see write_uedge2mds") # base 0,   (0:nx+1,0:ny+1,1:nstra)
 mdsput(".sep:fni:comment","data($)","Ion flux across separatrix [/s]")
@@ -1058,7 +1058,7 @@ mdstcl["write"]
 
 mdsclose
 mdsdisconnect
-remark "data written to shot "//shot_s
+print("data written to shot ", shot_s) #remark "data written to shot "//shot_s
 
 outtree.write()
 outtree.close()
