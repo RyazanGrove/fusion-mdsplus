@@ -15,6 +15,7 @@ from MDSplus import tree
 import MDSplus.mdsarray as mdsarr
 import numpy as np
 import sys
+import pdb
 
 
 yes=1
@@ -36,6 +37,7 @@ try:
    outtree.close()
    sys.exit()
 except:
+   print("Writing to shot {}".format(shot))
    pass
 
 outtree = tree.Tree('uedge')
@@ -138,17 +140,17 @@ if com.nxpt == 2:
 # store SNAPSHOT.GRID
 
 # Atom/ion mass [AMU]: deuterium neutral, deuterium ion, impurity neutral, impurity ions,
-am = np.zeros(ns)
-for ii in np.range(1,com.nhgsp+1):
-   am[2*(ii-1)]=bbb.mg[ii-1]/bbb.mp
-   am[2*(ii-1)+1]=bbb.minu[ii-1]
+am = np.zeros(ns*2)
+for ii in range(com.nhgsp):
+   am[2*ii]=bbb.mg[ii]/bbb.mp
+   am[2*ii+1]=bbb.minu[ii]
 
 if bbb.isimpon >= 5 : # multi species impurity
    nsm1=int(2*com.nhgsp)
-   for igsp in np.range(com.nhgsp+1,com.ngsp+2):
+   for igsp in range(com.nhgsp+1,com.ngsp+2):
       jz=int(igsp-com.nhgsp)
-      am[nsm1+jz-1]=bbb.mg[igsp-1]/bbb.mp
-      for ifld in range(1,com.nzsp[jz-1]+1):
+      am[nsm1+jz-1]=bbb.mg[igsp-2]/bbb.mp
+      for ifld in range(com.nzsp[jz-1]):
          am[nsm1+jz+ifld-1]=bbb.minu[nsm1+ifld-1]
       nsm1=nsm1+com.nzsp[jz-1]
 
@@ -268,8 +270,32 @@ if iscalc_length == no:
    mdsput(".grid:dspol:comment","data($)","poloidal distance from inner plate [grd.m]")
    
    # place holder for Coster's DSRAD parameter, Radial distance
-#   if [.not. exists["iscalc_radius"]] integer iscalc_radius=no ### !!! Where exists function comes from?
-#   if [iscalc_radius .eq. no] read calc_radius ### !!! How to read calc_radius? 
+   if not 'iscalc_radius' in locals(): iscalc_radius = no #   if [.not. exists["iscalc_radius"]] integer iscalc_radius=no ### !!! Where exists function comes from?
+   if iscalc_radius == no: 
+       print("read calc_radius")#   if [iscalc_radius .eq. no] read calc_radius ### !!! How to read calc_radius? 
+       #####   
+       # calc_radius
+       #
+       # procedure to determine radial distance from separatrix
+       #
+       # output variables:
+       #	lrad(ix,iy)
+
+       ### integer ix,iy
+       lrad = np.zeros((com.nx+1,com.ny+1))
+       lradf = np.zeros((com.nx+1,com.ny+1))
+       for ix in range(com.nx+1):
+           lradf[ix,0]=1./com.gy[ix,0]
+           lrad[ix,0]=0.5/com.gy[ix,0]
+           for iy in range(1,com.ny+1): #do iy=1,ny+1
+               lradf[ix,iy]=lradf[ix,iy-1]+1/com.gy[ix,iy]
+               lrad[ix,iy]=0.5*(lradf[ix,iy]+lradf[ix,iy-1])
+           #enddo
+           lrad[ix,:]=lrad[ix,:]-lradf[ix,com.iysptrx] ### iysptrx in com.v file
+       #enddo
+       iscalc_radius = yes #integer iscalc_radius=yes
+       #echo=oldecho
+       ######
    mdsput(".grid:dsrad","data($)",lrad)
    mdsput(".grid:dsrad:basisname","data($)","lrad from calc_radius")
    mdsput(".grid:dsrad:comment","data($)","radial distance from separatrix [grd.m]")
@@ -315,19 +341,32 @@ mdsput(".grid:psinrad:comment","data($)","normalized poloidal flux radially at O
 # place holder for Coster's REGFLY parameter, flx.y-directed flux region indices
 
 # place holder for Coster's REGVOL parameter, volume region indices
-core=range(com.ixpt1+1,com.ixpt2)  ### !!! range core=com.ixpt1+1:com.ixpt2
-### !!! integer regvol[0:com.nx+1,0:com.ny+1]
-regvol[core,0:com.iysptrx]=1
-regvol[core,com.iysptrx+1:com.ny+1]=2
-regvol[0:com.ixpt1,0:com.ny+1]=3
-regvol[com.ixpt2+1:com.nx+1,0:com.ny+1]=4
-mdsput(".grid:regvol","data($)",regvol)
-mdsput(".grid:regvol:basisname","data($)","N/A")
-mdsput(".grid:regvol:comment","data($)","1 for core, 2 for SOL abv xpt, 3 for inner divertor, 4 for outer divertor")
+temp11 = com.ixpt1+1
+temp12 = temp11[0]
+temp21 = com.ixpt2
+temp22 = temp21[0]
+print(temp11)
+print(temp12)
+print(temp21)
+print(temp22)
+#pdb.set_trace()
+core1 = [14]
+#pdb.set_trace()
+#print(core)
+#core = np.array(list(range(temp12,temp22))) #core=range((int)(com.ixpt1+1),(int)(com.ixpt2))  ### !!! range core=com.ixpt1+1:com.ixpt2
+#print(core)
+#regvol = np.zeros((com.nx+1,com.ny+1),dtype=np.int32)
+#regvol[list(range(temp12,temp22)),0:com.iysptrx]=1 #regvol[core,0:com.iysptrx]=1
+#regvol[core,com.iysptrx+1:com.ny+1]=2
+#regvol[0:com.ixpt1,0:com.ny+1]=3
+#regvol[com.ixpt2+1:com.nx+1,0:com.ny+1]=4
+#mdsput(".grid:regvol","data($)",regvol)
+#mdsput(".grid:regvol:basisname","data($)","N/A")
+#mdsput(".grid:regvol:comment","data($)","1 for core, 2 for SOL abv xpt, 3 for inner divertor, 4 for outer divertor")
 
 # Z-coordinate of cell centers, Z in machine coordinates
 mdsput(".grid:cz:basisname","data($)","com.zm[,,0]-com.zshift") # base 0,   (0:nxm+1,0:nym+1,0:4)
-trm[0:com.nx+1,0:com.ny+1]=com.zm[:,:,0]-com.zshift # base 0,   (0:nxm+1,0:nym+1,0:4)
+trm = com.zm[:,:,0]-com.zshift #trm[0:com.nx+1,0:com.ny+1]=com.zm[:,:,0]-com.zshift # base 0,   (0:nxm+1,0:nym+1,0:4)
 mdsput(".grid:cz","data($)",trm)
 mdsput(".grid:cz:comment","data($)","Vertical coordinate of cell center, machine coordinates [grd.m]")
 
@@ -341,9 +380,10 @@ mdsput(".grid:z:comment","data($)","Z of cell vertices, machine coordinates [grd
 
 # Vessel structure
 # test on com.xlim added for api.one of Rognlien's benchmark cases
-if com.nlim > 0:
-    mdsput(".grid:vessel","data($)",transpose[[com.xlim[1:shape[com.xlim]-1],com.ylim[1:shape[com.ylim]-1]-com.zshift,com.xlim[2:shape[com.xlim]],com.ylim[2:shape[com.ylim]]-com.zshift]])
-endif
+### !!! where is transpose funcction? 
+#if com.nlim > 0:
+#    mdsput(".grid:vessel","data($)",transpose[[com.xlim[1:shape[com.xlim]-1],com.ylim[1:shape[com.ylim]-1]-com.zshift,com.xlim[2:shape[com.xlim]],com.ylim[2:shape[com.ylim]]-com.zshift]])
+#endif
 mdsput(".grid:vessel:basisname","data($)","com.xlim[0], com.ylim[0]-com.zshift, com.xlim[1], com.ylim[1]-com.zshift")
 mdsput(".grid:vessel:comment","data($)","Data defining line segments of first wall [grd.m]")
 
@@ -352,7 +392,7 @@ za = [] ### !!! real za[ns]
 #integer bbb.igsp,ifld,ii
 for ii in range(com.nhgsp): #do ii=1,com.nhgsp
     za.append(0.0) #za[2*[ii-1]+1]=0.
-    za.append(api.bbb.zi[ii]) #za[2*[ii-1]+2]=api.bbb.zi[ii]
+    za.append(bbb.zi[ii]) #za[2*[ii-1]+2]=api.bbb.zi[ii]
 #enddo
 
 if(bbb.isimpon >= 5): #if [bbb.isimpon .ge. 5] then  # multi species impurity
@@ -361,7 +401,7 @@ if(bbb.isimpon >= 5): #if [bbb.isimpon .ge. 5] then  # multi species impurity
         jz = igsp - com.nhgsp #integer jz=bbb.igsp-com.nhgsp
         za.append(0.0) #za[nsm1+jz]=0.
         for ifld in range(com.nzsp[js]): #do ifld=1,com.nzsp[jz]
-            za.append(api.bbb.zi[nsm1+ifld])#za[nsm1+jz+ifld]=api.bbb.zi[nsm1+ifld]
+            za.append(bbb.zi[nsm1+ifld])#za[nsm1+jz+ifld]=api.bbb.zi[nsm1+ifld]
         #enddo
         nsm1=nsm1+com.nzsp[jz]
     #enddo
@@ -381,7 +421,7 @@ for ii in range(com.nhgsp): #do ii=1,com.nhgsp
 
 if bbb.isimpon >= 5:  #if [bbb.isimpon .ge. 5] then  # multi species impurity
     nsm1=2*com.nhgsp
-    for igsp in range(nhgsp+1,com.ngsp): #do bbb.igsp=com.nhgsp+1,com.ngsp
+    for igsp in range(com.nhgsp+1,com.ngsp): #do bbb.igsp=com.nhgsp+1,com.ngsp
         jz=bbb.igsp-com.nhgsp
         zn.append(bbb.znucl[nsm1+jz]) #zn[nsm1+jz]=bbb.znucl[nsm1+jz]
         for ifld in range(com.nzsp[jz]): #do ifld=1,com.nzsp[jz]
@@ -404,10 +444,10 @@ mdsput(".grid:zn:comment","data($)","Nuclear charge of ion/neutral species")
 # placeholder for Coster's alf parameter, thermo-electric coefficient
 
 # B fields: poloidal, radial, toroidal, total
-bppol = com.com.bpol[:,:,0] ### !!! real bppol[0:com.nx+1,0:com.ny+1]=com.com.bpol[,,0] # base 0,   (0:nxm+1,0:nym+1,0:4)
-btor = com.com.bphi[:,:,0] ### !!! real btor[0:com.nx+1,0:com.ny+1]=com.com.bphi[,,0] # base 0,   (0:nxm+1,0:nym+1,0:4)
-brad = com.com.br[:,:,0] ### !!! real brad[0:com.nx+1,0:com.ny+1]=com.com.br[,,0] # base 0,   (0:nxm+1,0:nym+1,0:4)
-bbb.btot[0:com.nx+1,0:com.ny+1]=com.com.b[:,:,0] #Can we do this??? ### !!! real bbb.btot[0:com.nx+1,0:com.ny+1]=com.com.b[,,0] # base 0,   (0:nxm+1,0:nym+1,0:4) # base 0,   (0:nx+1,0:ny+1)
+bppol = com.bpol[:,:,0] ### !!! real bppol[0:com.nx+1,0:com.ny+1]=com.com.bpol[,,0] # base 0,   (0:nxm+1,0:nym+1,0:4)
+btor = com.bphi[:,:,0] ### !!! real btor[0:com.nx+1,0:com.ny+1]=com.com.bphi[,,0] # base 0,   (0:nxm+1,0:nym+1,0:4)
+brad = com.br[:,:,0] ### !!! real brad[0:com.nx+1,0:com.ny+1]=com.com.br[,,0] # base 0,   (0:nxm+1,0:nym+1,0:4)
+bbb.btot = com.b[:,:,0] #Can we do this??? ### !!! real bbb.btot[0:com.nx+1,0:com.ny+1]=com.com.b[,,0] # base 0,   (0:nxm+1,0:nym+1,0:4) # base 0,   (0:nx+1,0:ny+1)
 mdsput(":b","build_signal[build_with_units[$,""T""],,\top.snapshot.grid:cr,\top.snapshot.grid:cz]",[bppol[0:com.nx+1,0:com.ny+1],brad[0:com.nx+1,0:com.ny+1],btor[0:com.nx+1,0:com.ny+1],bbb.btot[0:com.nx+1,0:com.ny+1]])  # base 0,   (0:nxm+1,0:nym+1,0:4) # base 0,   (0:nx+1,0:ny+1)
 mdsput(":b:basisname","data($)","[com.com.bpol,com.br,com.bphi,com.b]") # base 0,   (0:nxm+1,0:nym+1,0:4) # base 0,   (0:nxm+1,0:nym+1,0:4) # base 0,   (0:nxm+1,0:nym+1,0:4) # base 0,   (0:nxm+1,0:nym+1,0:4)
 mdsput(":b:comment","data($)","magnetic field components [T]") # base 0,   (0:nxm+1,0:nym+1,0:4)
@@ -471,9 +511,10 @@ mdsput(".fhiy:comment","data($)","Ion energy flow across north face [W]")
 # place holder for Coster's fhty parameter, Radial  total energy flux
 
 # Poloidal momentum current, east [X] face - resolved for all species 
-fmox = np.zeros((com.nx,com.ny+1,2)) ### !!! real fmox[0:com.nx,0:com.ny+1,2]
+fmox = np.zeros((com.nx,com.ny+1+1,2+1)) ### !!! real fmox[0:com.nx,0:com.ny+1,2]
 #fmox[,,1]=0
 if (bbb.isupgon[1] == 1): fmox[:,:,1]=bbb.fmix[0:com.nx,:,2] ### !!! if [bbb.isupgon[1] .eq. 1] fmox[,,1]=bbb.fmix[0:com.nx,,2] # base 0,   (0:nx+1,0:ny+1,1:nusp)
+#pdb.set_trace()
 fmox[:,:,2]=bbb.fmix[0:com.nx,:,1] # base 0,   (0:nx+1,0:ny+1,1:nusp)
 
 mdsput(":fmox","build_signal[build_with_units[$,""Nwt""],,\top.snapshot.grid:cr_x,\top.snapshot.grid:cz_x,\top.snapshot:textpl[0:1]]",fmox)
@@ -481,7 +522,7 @@ mdsput(":fmox:basisname","data($)","bbb.fmix[0:com.nx,,]") # base 0,   (0:nx+1,0
 mdsput(".fmox:comment","data($)","momentum across east face [Nwt]")
 
 # Radial particle flux, north [Y] face  - resolved for all species 
-fmoy = np.empty((com.nx+1,com.ny,2))### !!! real fmoy[0:com.nx+1,0:com.ny,2]
+fmoy = np.zeros((com.nx+1+1,com.ny,2+1))### !!! real fmoy[0:com.nx+1,0:com.ny,2]
 fmoy[:,:,1]=0.0
 if (bbb.isupgon[1] == 1): fmoy[:,:,1]=bbb.fmiy[:,0:com.ny,2] ### !!! if [bbb.isupgon[1] .eq. 1] fmoy[,,1]=bbb.fmiy[,0:com.ny,2] # base 0,   (0:nx+1,0:ny+1,1:nusp)
 fmoy[:,:,2]=bbb.fmiy[:,0:com.ny,1] # base 0,   (0:nx+1,0:ny+1,1:nusp)
@@ -492,12 +533,12 @@ mdsput(".fmoy:comment","data($)"," momentum across north face [Nwt]")
 
 # Poloidal particle current, east [X] face - resolved for all species 
 # don't use bbb.fnax for variable since already exists
-fncx = np.empty((com.nx,com.ny+1,ns)) ### !!! real fncx[0:com.nx,0:com.ny+1,ns]
+fncx = np.empty((com.nx,com.ny+1+1,ns)) ### !!! real fncx[0:com.nx,0:com.ny+1,ns]
 ###integer bbb.igsp,ifld,ii
 # note this indexing does not com.work if there is more than api.one inertial neutral
 for ii in range(com.nhgsp): ### do ii=1,com.nhgsp
-    fncx[:,:,2*[ii-1]+1]=bbb.fngx[0:com.nx,:,ii] # base 0,   (0:nx+1,0:ny+1,1:ngsp)
-    fncx[:,:,2*[ii-1]+2]=bbb.fnix[0:com.nx,:,ii] # base 0,   (0:nx+1,0:ny+1,1:nisp)
+    fncx[:,:,2*ii]=bbb.fngx[0:com.nx,:,ii] # base 0,   (0:nx+1,0:ny+1,1:ngsp)
+    fncx[:,:,2*ii+1]=bbb.fnix[0:com.nx,:,ii] # base 0,   (0:nx+1,0:ny+1,1:nisp)
 #enddo
 
 if (bbb.isimpon >=  5):  # multi species impurities
@@ -522,7 +563,7 @@ mdsput(":fnax:comment","data($)","particle current across east face [s^-1]")
 
 # Radial particle flux, north [Y] face  - resolved for all species 
 # don't use bbb.fnay for variable since it already exists
-fncy = np.zeros((com.nx+1,com.ny,ns))### !!! real fncy[0:com.nx+1,0:com.ny,ns]
+fncy = np.zeros((com.nx+1+1,com.ny,ns))### !!! real fncy[0:com.nx+1,0:com.ny,ns]
 #integer bbb.igsp,ifld,ii
 # note this indexing does not com.work if there is more than api.one inertial neutral
 for ii in range(com.nhgsp): #do ii=1,com.nhgsp
@@ -551,13 +592,13 @@ mdsput(":fnay:comment","data($)","particle current across north face [s^-1]")
 # placeholder for Coster fnay_52 parameter, Radial particle flux [5/2 piece]
 
 # hx, length of cell
-hx = np.full((com.nx+1,com.ny+1), 1/com.gx) ### !!! real hx[0:com.nx+1,0:com.ny+1]=1/com.gx # base 0,   (0:nx+1,0:ny+1)
+hx = np.full((com.nx+1+1,com.ny+1+1), 1/com.gx) ### !!! real hx[0:com.nx+1,0:com.ny+1]=1/com.gx # base 0,   (0:nx+1,0:ny+1)
 mdsput(":hx","build_signal[build_with_units[$,""grd.m""],,\top.snapshot.grid:cr,\top.snapshot.grid:cz]",hx)
 mdsput(":hx:basisname","data($)","1/com.gx") # base 0,   (0:nx+1,0:ny+1)
 mdsput(".hx:comment","data($)","length of primary cells [grd.m]")
 
 # hy, width of cell
-hy = np.full((com.nx+1,com.ny+1), 1/com.gy) ### !!! real hy[0:com.nx+1,0:com.ny+1]=1/com.gy # base 0,   (0:nx+1,0:ny+1)
+hy = np.full((com.nx+1+1,com.ny+1+1), 1/com.gy) ### !!! real hy[0:com.nx+1,0:com.ny+1]=1/com.gy # base 0,   (0:nx+1,0:ny+1)
 mdsput(":hy","build_signal[build_with_units[$,""grd.m""],,\top.snapshot.grid:cr,\top.snapshot.grid:cz]",hy)
 mdsput(":hy:basisname","data($)","1/com.gy") # base 0,   (0:nx+1,0:ny+1)
 mdsput(".hy:comment","data($)","width of primary cells [grd.m]")
@@ -571,7 +612,7 @@ mdsput(".hy:comment","data($)","width of primary cells [grd.m]")
 # place holder for Coster's kyi0 parameter, kyi0
 
 # Neutral/ion density
-iondens = np.zeros(com.nx+1,com.ny+1,ns)
+iondens = np.zeros((com.nx+1+1,com.ny+1+1,ns))
 
 ### integer bbb.igsp,ifld,ii
 # note this indexing does not com.work if there is more than api.one inertial neutral
@@ -701,6 +742,8 @@ fluorine=["F0","F+","F2+","F3+","F4+","F5+","F6+","F7+", \
 neon=["Ne0","Ne+","Ne2+","Ne3+","Ne4+","Ne5+","Ne6+", \
 "Ne7+","Ne8+","Ne9+","Ne10+"]
 
+### !!! added textpl
+textpl = ['']*(ns+1)
 # Assume first neutral and ion species is an isotope of hydrogen
 if (bbb.znucl[1]==1):
     if (bbb.minu[1] == 1.0):
@@ -764,7 +807,7 @@ mdsput(":ti:comment","data($)","Ion temperature in primary cell [eV]") # base 0,
 
 # [Neutral]/Ion parallel velocity
 # Diffusive neutral carbon model, hence set carbon neutral velocity to api.zero
-ua = np.zeros(com.nx,com.ny+1,ns) ### !!! real ua[0:com.nx,0:com.ny+1,ns]
+ua = np.zeros((com.nx,com.ny+1+1,ns)) ### !!! real ua[0:com.nx,0:com.ny+1,ns]
 #integer bbb.igsp,ifld,ii
 if (com.nhgsp > 1):
     print("commented block") #remark "Not implemented for more than api.one hydrogen species!"
@@ -797,9 +840,10 @@ mdsput(".ua:comment","data($)","neutral/ion parallel velocity in primary cell [g
 # place holder for Coster's VLAY parameter, Radial pinch velocity
 
 # volume
-mdsput(":com.vol:basisname","data($)","com.vol") # base 0,   (0:nx+1,0:ny+1)
-mdsput(":com.vol","build_signal[build_with_units[$,""m3""],,]",com.vol) # base 0,   (0:nx+1,0:ny+1)
-mdsput(":com.vol:comment","data($)","Volume of primary cells [grd.m^3]") # base 0,   (0:nx+1,0:ny+1)
+### !!!! Exception   mdsput(":com.vol:basisname","data($)","com.vol") # base 0,   (0:nx+1,0:ny+1)
+### !!! MDSplus.mdsExceptions.TreeNNF: %TREE-W-NNF, Node Not Found
+### !!! mdsput(":com.vol","build_signal[build_with_units[$,""m3""],,]",com.vol) # base 0,   (0:nx+1,0:ny+1)
+### !!! mdsput(":com.vol:comment","data($)","Volume of primary cells [grd.m^3]") # base 0,   (0:nx+1,0:ny+1)
 
 # end of SNAPSHOT branch
 # --------------------------------------------------------------------------
@@ -807,7 +851,7 @@ mdsput(":com.vol:comment","data($)","Volume of primary cells [grd.m^3]") # base 
 # --------------------------------------------------------------------------
 # store IDENT branch
 
-mdssetdefault["\top.ident"]
+### !!! mdssetdefault["\top.ident"]
 
 # place holder for Coster's parameter B2FGMTRYID, md5sum hash of b2fgmtry
 
@@ -818,67 +862,74 @@ mdssetdefault["\top.ident"]
 # place holder for Coster's parameter BWFSTATIID, md5sum hash of b2stati
 
 # Date written to database
-date=infodate
-mdsput(":date","data($)",date)
-mdsput(".date:comment","data($)","Date information written to MDSplus")
+### !!! date=infodate
+### !!! mdsput(":date","data($)",date)
+### !!! mdsput(".date:comment","data($)","Date information written to MDSplus")
 
 # Directory in which the run was stored [GDP]
-basisexe["pwd > pwd.txt"]
-unit=basopen["pwd.txt","r"]
+### !!! basisexe["pwd > pwd.txt"]
+### !!! unit=basopen["pwd.txt","r"]
 # character*80 rundir
-rundir = uasreadline[unit] ### !!! uasreadline[unit,&rundir]
-basclose[unit]
-rundir=trim[rundir]
+### !!! rundir = uasreadline[unit] ### !!! uasreadline[unit,&rundir]
+### !!! basclose[unit]
+### !!! rundir=trim[rundir]
 #!com.rm pwd.txt # base 0,   (0:nxm+1,0:nym+1,0:4)
-mdsput(".directory","data($)",rundir)
-mdsput(".directory:comment","data($)","Directory used for save files, etc.")
+### !!! mdsput(".directory","data($)",rundir)
+### !!! mdsput(".directory:comment","data($)","Directory used for save files, etc.")
 
 # Identity for Experiment
-if (exists["machine"]):
+if "machine" in locals(): # (exists["machine"]):
     mdsput(":exp","data($)",machine)
     mdsput(".exp:comment","data($)","Experiment name")
 else:
-    mdsput(":exp","data($)","n/bbb.a")
-    mdsput(".exp:comment","data($)","Experiment name not specified")
+    ### !!! mdsput(":exp","data($)","n/bbb.a")
+    ### !!! MDSplus.mdsExceptions.TreeNNF: %TREE-W-NNF, Node Not Found
+    ### !!! mdsput(".exp:comment","data($)","Experiment name not specified")
+    tempVar = 0
 #endif
 
 # Geometry
-mdsput(":com.geometry","data($)",com.geometry)
-mdsput(".com.geometry:basisname","data($)","com.geometry")
-mdsput(".com.geometry:comment","data($)","mnemonic for com.geometry")
+### !!! MDSplus.mdsExceptions.TreeNNF: %TREE-W-NNF, Node Not Found
+### !!! mdsput(":com.geometry","data($)",com.geometry)
+### !!! mdsput(".com.geometry:basisname","data($)","com.geometry")
+### !!! mdsput(".com.geometry:comment","data($)","mnemonic for com.geometry")
 
 # Host identification
-temp=infohost
-mdsput(":host","data($)",temp)
-mdsput(".host:comment","data($)","host running on when write to MDSplus")
+### !!! temp=infohost
+### !!! mdsput(":host","data($)",temp)
+### !!! mdsput(".host:comment","data($)","host running on when write to MDSplus")
 
 # place holder for Coster's parameter MAIN, Label in b2fstate derived from b2mn.dat
 
 # Number of UEDGE fluid species
-mdsput(".ns","data($)",ns)
-mdsput(".ns:basisname","data($)","bbb.see write_uedge2mds") # base 0,   (0:nx+1,0:ny+1,1:nstra)
-mdsput(".ns:comment","data($)","Number of species")
+### !!! MDSplus.mdsExceptions.TreeNNF: %TREE-W-NNF, Node Not Found
+### !!! mdsput(".ns","data($)",ns)
+### !!! mdsput(".ns:basisname","data($)","bbb.see write_uedge2mds") # base 0,   (0:nx+1,0:ny+1,1:nstra)
+### !!! mdsput(".ns:comment","data($)","Number of species")
 
 # Grid size in poloidal direction, including guard cells
-mdsput(".com.nx","data($)",com.nx+2)
-mdsput(".com.nx:basisname","data($)","com.nx+2")
-mdsput(".com.nx:comment","data($)","Number of poloidal cells")
+### !!! MDSplus.mdsExceptions.TreeNNF: %TREE-W-NNF, Node Not Found
+### !!! mdsput(".com.nx","data($)",com.nx+2)
+### !!! mdsput(".com.nx:basisname","data($)","com.nx+2")
+### !!! mdsput(".com.nx:comment","data($)","Number of poloidal cells")
 
 # Grid size in radial direction, including guard cells
-mdsput(".com.ny","data($)",com.ny+2)
-mdsput(".com.ny:basisname","data($)","com.ny+2")
-mdsput(".com.ny:comment","data($)","Number of radial cells")
+### !!! MDSplus.mdsExceptions.TreeNNF: %TREE-W-NNF, Node Not Found
+### !!! mdsput(".com.ny","data($)",com.ny+2)
+### !!! mdsput(".com.ny:basisname","data($)","com.ny+2")
+### !!! mdsput(".com.ny:comment","data($)","Number of radial cells")
 
 # place holder for Coster's parameter OBJECTCODE
 
 # place holder for Coster's parameter PHYSICS
 
 # Problem name
-mdsput(".probname","data($)",probname)
+### !!! mdsput(".probname","data($)",probname)
 
-mdsput(":shot","data($)",com.eshot)
-mdsput(".shot:basisname","data($)","com.eshot")
-mdsput(".shot:comment","data($)","Experiment shot number")
+### !!! MDSplus.mdsExceptions.TreeNNF: %TREE-W-NNF, Node Not Found
+### !!! mdsput(":shot","data($)",com.eshot)
+### !!! mdsput(".shot:basisname","data($)","com.eshot")
+### !!! mdsput(".shot:comment","data($)","Experiment shot number")
 
 # List of plasma species
 # concatenate components of textpl to form Coster's character string
@@ -888,32 +939,35 @@ for ii in range(2,ns):
     #iii=ii*5
     cstrspcs+=textpl[ii] ### !!! character*iii cstrspcs=cstrspcs//textpl[ii]
 #enddo
-mdsput(".species","data($)",cstrspcs)
-mdsput(".species:basisname","data($)","bbb.see write_uedge2mds") # base 0,   (0:nx+1,0:ny+1,1:nstra)
-mdsput(".species:comment","data($)","Character string of plasma species")
+### !!! MDSplus.mdsExceptions.TreeNNF: %TREE-W-NNF, Node Not Found
+### !!! mdsput(".species","data($)",cstrspcs)
+### !!! mdsput(".species:basisname","data($)","bbb.see write_uedge2mds") # base 0,   (0:nx+1,0:ny+1,1:nstra)
+### !!! mdsput(".species:comment","data($)","Character string of plasma species")
 
 temp=com.etime*1.e-3
-mdsput(":time","data($)",temp)
-mdsput(".time:basisname","data($)","com.etime*1.e-3")
-mdsput(".time:comment","data($)","Experiment shot time [s]")
+### !!! MDSplus.mdsExceptions.TreeNNF: %TREE-W-NNF, Node Not Found
+### !!! mdsput(":time","data($)",temp)
+### !!! mdsput(".time:basisname","data($)","com.etime*1.e-3")
+### !!! mdsput(".time:comment","data($)","Experiment shot time [s]")
 
 # place holder for Coster's parameter UEDGETOP
 
-mdsput(":uedgeversion","data($)",bbb.uedge_ver)
-mdsput(".uedgeversion:basisname","data($)","bbb.uedge_ver")
-mdsput(".uedgeversion:comment","data($)","UEDGE version number")
+### !!! MDSplus.mdsExceptions.TreeNNF: %TREE-W-NNF, Node Not Found
+### !!! mdsput(":uedgeversion","data($)",bbb.uedge_ver)
+### !!! mdsput(".uedgeversion:basisname","data($)","bbb.uedge_ver")
+### !!! mdsput(".uedgeversion:comment","data($)","UEDGE version number")
 
 # user [GDP]
 #!whoami > pwd.txt
-unit=basopen["pwd.txt","r"]
+### !!! unit=basopen["pwd.txt","r"]
 #character*80 whoami
-whoami = basreadline[unit] ### !!! basreadline[unit,&whoami]
-basclose[unit]
-whoami=trim[whoami]
+### !!! whoami = basreadline[unit] ### !!! basreadline[unit,&whoami]
+### !!! basclose[unit]
+### !!! whoami=trim[whoami]
 #!com.rm pwd.txt # base 0,   (0:nxm+1,0:nym+1,0:4)
-mdsput(".user","data($)",whoami)
-mdsput(".user:basisname","data($)","bbb.see write_uedge2mds") # base 0,   (0:nx+1,0:ny+1,1:nstra)
-mdsput(".user:comment","data($)","User running code when MDSPLUS data written")
+### !!! mdsput(".user","data($)",whoami)
+### !!! mdsput(".user:basisname","data($)","bbb.see write_uedge2mds") # base 0,   (0:nx+1,0:ny+1,1:nstra)
+### !!! mdsput(".user:comment","data($)","User running code when MDSPLUS data written")
 
 # place holder for Coster's parameter VERSION, version number of this routine
 
@@ -925,47 +979,55 @@ mdsput(".user:comment","data($)","User running code when MDSPLUS data written")
 # store IDENT.IMPSEP
 
 # Inner midplane separatrix R
-mdsput(".impsep:cr","data($)",com.rm[iximp,com.iysptrx,0]) # base 0,   (0:nxm+1,0:nym+1,0:4)
-mdsput(".impsep.cr:basisname","data($)","com.rm[iximp,com.iysptrx,0]") # base 0,   (0:nxm+1,0:nym+1,0:4)
-mdsput(".impsep.cr:comment","data($)","Separatrix radius at IMP [grd.m]")
+### !!! MDSplus.mdsExceptions.TreeNNF: %TREE-W-NNF, Node Not Found
+### !!! mdsput(".impsep:cr","data($)",com.rm[iximp,com.iysptrx,0]) # base 0,   (0:nxm+1,0:nym+1,0:4)
+### !!! mdsput(".impsep.cr:basisname","data($)","com.rm[iximp,com.iysptrx,0]") # base 0,   (0:nxm+1,0:nym+1,0:4)
+### !!! mdsput(".impsep.cr:comment","data($)","Separatrix radius at IMP [grd.m]")
 
 # Inner midplane separatrix Z
-mdsput(".impsep:cz","data($)",com.zm[iximp,com.iysptrx,0]) # base 0,   (0:nxm+1,0:nym+1,0:4)
-mdsput(".impsep.cz:basisname","data($)","com.zm[iximp,com.iysptrx,0]") # base 0,   (0:nxm+1,0:nym+1,0:4)
-mdsput(".impsep.cz:comment","data($)","Separatrix vertical position at IMP [grd.m]")
+### !!! MDSplus.mdsExceptions.TreeNNF: %TREE-W-NNF, Node Not Found
+### !!! mdsput(".impsep:cz","data($)",com.zm[iximp,com.iysptrx,0]) # base 0,   (0:nxm+1,0:nym+1,0:4)
+### !!! mdsput(".impsep.cz:basisname","data($)","com.zm[iximp,com.iysptrx,0]") # base 0,   (0:nxm+1,0:nym+1,0:4)
+### !!! mdsput(".impsep.cz:comment","data($)","Separatrix vertical position at IMP [grd.m]")
 
 # Inner midplane separatrix diffusion coefficient 
-mdsput(".impsep:d","data($)",bbb.difni[1])
-mdsput(".impsep:d:basisname","data($)","bbb.difni[1]")
-mdsput(".impsep:d:comment","data($)","diffusion coefficient [m2/s]")
+### !!! MDSplus.mdsExceptions.TreeNNF: %TREE-W-NNF, Node Not Found
+### !!! mdsput(".impsep:d","data($)",bbb.difni[1])
+### !!! mdsput(".impsep:d:basisname","data($)","bbb.difni[1]")
+### !!! mdsput(".impsep:d:comment","data($)","diffusion coefficient [m2/s]")
 
 # Inner midplane separatrix electron bbb.diffusivity # base 0,   (0:nx+1,0:ny+1)
-mdsput(".impsep:kye","data($)",bbb.kye)
-mdsput(".impsep:kye:basisname","data($)","bbb.kye")
-mdsput(".impsep:kye:comment","data($)","electron thermal diffusicity [m2/s]")
+### !!! MDSplus.mdsExceptions.TreeNNF: %TREE-W-NNF, Node Not Found
+### !!! mdsput(".impsep:kye","data($)",bbb.kye)
+### !!! mdsput(".impsep:kye:basisname","data($)","bbb.kye")
+### !!! mdsput(".impsep:kye:comment","data($)","electron thermal diffusicity [m2/s]")
 
 # Inner midplane separatix ion bbb.diffusivity for ns=1 # base 0,   (0:nx+1,0:ny+1)
-mdsput(".impsep:kyi","data($)",bbb.kyi)
-mdsput(".impsep:kyi:basisname","data($)","bbb.kyi")
-mdsput(".impsep:kyi:comment","data($)","ion thermal diffusicity [m2/s]")
+### !!! MDSplus.mdsExceptions.TreeNNF: %TREE-W-NNF, Node Not Found 
+### !!! mdsput(".impsep:kyi","data($)",bbb.kyi)
+### !!! mdsput(".impsep:kyi:basisname","data($)","bbb.kyi")
+### !!! mdsput(".impsep:kyi:comment","data($)","ion thermal diffusicity [m2/s]")
 
 # Inner midplane separatrix ion/atom bbb.diffusivity # base 0,   (0:nx+1,0:ny+1)
 # mdsput(".impsep:kyi0","data($)",???)
 
 # Inner midplane separatrix bbb.ne # base 0,   (0:nx+1,0:ny+1)
-mdsput(".impsep:ne","data($)",bbb.ne[iximp,com.iysptrx]) # base 0,   (0:nx+1,0:ny+1)
-mdsput(".impsep:ne:basisname","data($)","bbb.ne[iximp,com.iysptrx]") # base 0,   (0:nx+1,0:ny+1)
-mdsput(".impsep:ne:comment","data($)","Electron density at IMP separatrix [grd.m^-3]") # base 0,   (0:nx+1,0:ny+1)
+### !!! MDSplus.mdsExceptions.TreeNNF: %TREE-W-NNF, Node Not Found
+### !!! mdsput(".impsep:ne","data($)",bbb.ne[iximp,com.iysptrx]) # base 0,   (0:nx+1,0:ny+1)
+### !!! mdsput(".impsep:ne:basisname","data($)","bbb.ne[iximp,com.iysptrx]") # base 0,   (0:nx+1,0:ny+1)
+### !!! mdsput(".impsep:ne:comment","data($)","Electron density at IMP separatrix [grd.m^-3]") # base 0,   (0:nx+1,0:ny+1)
 
 # Inner midplane separatrix Te [eV]
-mdsput(".impsep:te","data($)",1./bbb.qe*bbb.te[iximp,com.iysptrx]) # base 0,   (0:nx+1,0:ny+1)
-mdsput(".impsep:te:basisname","data($)","bbb.te[iximp,com.iysptrx]/aph.bbb.ev") # base 0,   (0:nx+1,0:ny+1)
-mdsput(".impsep:te:comment","data($)","Electron temperature at IMP separatrix, [eV]") # base 0,   (0:nx+1,0:ny+1)
+### !!! MDSplus.mdsExceptions.TreeNNF: %TREE-W-NNF, Node Not Found
+### !!! mdsput(".impsep:te","data($)",1./bbb.qe*bbb.te[iximp,com.iysptrx]) # base 0,   (0:nx+1,0:ny+1)
+### !!! mdsput(".impsep:te:basisname","data($)","bbb.te[iximp,com.iysptrx]/aph.bbb.ev") # base 0,   (0:nx+1,0:ny+1)
+### !!! mdsput(".impsep:te:comment","data($)","Electron temperature at IMP separatrix, [eV]") # base 0,   (0:nx+1,0:ny+1)
 
 # Inner midplane separatrix Ti [eV]
-mdsput(".impsep:ti","data($)",1./bbb.qe*bbb.ti[iximp,com.iysptrx]) # base 0,   (0:nx+1,0:ny+1)
-mdsput(".impsep:ti:basisname","data($)","bbb.ti[iximp,com.iysptrx]/aph.bbb.ev") # base 0,   (0:nx+1,0:ny+1)
-mdsput(".impsep:ti:comment","data($)","Ion temperature at IMP separatrix, [eV]") # base 0,   (0:nx+1,0:ny+1)
+### !!! MDSplus.mdsExceptions.TreeNNF: %TREE-W-NNF, Node Not Found
+### !!! mdsput(".impsep:ti","data($)",1./bbb.qe*bbb.ti[iximp,com.iysptrx]) # base 0,   (0:nx+1,0:ny+1)
+### !!! mdsput(".impsep:ti:basisname","data($)","bbb.ti[iximp,com.iysptrx]/aph.bbb.ev") # base 0,   (0:nx+1,0:ny+1)
+### !!! mdsput(".impsep:ti:comment","data($)","Ion temperature at IMP separatrix, [eV]") # base 0,   (0:nx+1,0:ny+1)
 
 # end of IDENT.IMPSEP branch
 # --------------------------------------------------------------------------
@@ -974,47 +1036,48 @@ mdsput(".impsep:ti:comment","data($)","Ion temperature at IMP separatrix, [eV]")
 # store IDENT.OMPSEP branch
 
 # Outer midplane separatrix R
-mdsput(".ompsep:cr","data($)",com.rm[bbb.ixmp,com.iysptrx,0]) # base 0,   (0:nxm+1,0:nym+1,0:4)
-mdsput(".ompsep.cr:basisname","data($)","com.rm[bbb.ixmp,com.iysptrx,0]") # base 0,   (0:nxm+1,0:nym+1,0:4)
-mdsput(".ompsep.cr:comment","data($)","Separatrix radius at OMP [grd.m]")
+### !!! MDSplus.mdsExceptions.TreeNNF: %TREE-W-NNF, Node Not Found
+### !!! mdsput(".ompsep:cr","data($)",com.rm[bbb.ixmp,com.iysptrx,0]) # base 0,   (0:nxm+1,0:nym+1,0:4)
+### !!! mdsput(".ompsep.cr:basisname","data($)","com.rm[bbb.ixmp,com.iysptrx,0]") # base 0,   (0:nxm+1,0:nym+1,0:4)
+### !!! mdsput(".ompsep.cr:comment","data($)","Separatrix radius at OMP [grd.m]")
 
 # Outer midplane separatrix Z
-mdsput(".ompsep:cz","data($)",com.zm[bbb.ixmp,com.iysptrx,0]) # base 0,   (0:nxm+1,0:nym+1,0:4)
-mdsput(".ompsep.cz:basisname","data($)","com.zm[bbb.ixmp,com.iysptrx,0]") # base 0,   (0:nxm+1,0:nym+1,0:4)
-mdsput(".ompsep.cz:comment","data($)","Separatrix vertical position at OMP [grd.m]")
+### !!! mdsput(".ompsep:cz","data($)",com.zm[bbb.ixmp,com.iysptrx,0]) # base 0,   (0:nxm+1,0:nym+1,0:4)
+### !!! mdsput(".ompsep.cz:basisname","data($)","com.zm[bbb.ixmp,com.iysptrx,0]") # base 0,   (0:nxm+1,0:nym+1,0:4)
+### !!! mdsput(".ompsep.cz:comment","data($)","Separatrix vertical position at OMP [grd.m]")
 
 # Outer midplane separatrix diffusion coefficient 
-mdsput(".ompsep:d","data($)",bbb.difni[1])
-mdsput(".ompsep:d:basisname","data($)","bbb.difni[1]")
-mdsput(".ompsep:d:comment","data($)","diffusion coefficient [m2/s]")
+### !!! mdsput(".ompsep:d","data($)",bbb.difni[1])
+### !!! mdsput(".ompsep:d:basisname","data($)","bbb.difni[1]")
+### !!! mdsput(".ompsep:d:comment","data($)","diffusion coefficient [m2/s]")
 
 # Outer midplane separatrix electron bbb.diffusivity # base 0,   (0:nx+1,0:ny+1)
-mdsput(".ompsep:kye","data($)",bbb.kye)
-mdsput(".ompsep:kye:basisname","data($)","bbb.kye")
-mdsput(".ompsep:kye:comment","data($)","electron thermal diffusicity [m2/s]")
+### !!! mdsput(".ompsep:kye","data($)",bbb.kye)
+### !!! mdsput(".ompsep:kye:basisname","data($)","bbb.kye")
+### !!! mdsput(".ompsep:kye:comment","data($)","electron thermal diffusicity [m2/s]")
 
 # Outer midplane separatix ion diffusivityt for ns=1
-mdsput(".ompsep:kyi","data($)",bbb.kyi)
-mdsput(".impsep:kyi:basisname","data($)","bbb.kyi")
-mdsput(".impsep:kyi:comment","data($)","ion thermal diffusicity [m2/s]")
+### !!! mdsput(".ompsep:kyi","data($)",bbb.kyi)
+### !!! mdsput(".impsep:kyi:basisname","data($)","bbb.kyi")
+### !!! mdsput(".impsep:kyi:comment","data($)","ion thermal diffusicity [m2/s]")
 
 # Outer midplane separatrix ion/atom bbb.diffusivity # base 0,   (0:nx+1,0:ny+1)
 # mdsput(".ompsep:kyi0","data($)",???)
 
 # Outer midplane separatrix bbb.ne # base 0,   (0:nx+1,0:ny+1)
-mdsput(".ompsep:ne","data($)",bbb.ne[bbb.ixmp,com.iysptrx]) # base 0,   (0:nx+1,0:ny+1)
-mdsput(".ompsep:ne:basisname","data($)","bbb.ne[bbb.ixmp,com.iysptrx]") # base 0,   (0:nx+1,0:ny+1)
-mdsput(".ompsep:ne:comment","data($)","Electron density at OMP separatrix [grd.m^-3]") # base 0,   (0:nx+1,0:ny+1)
+### !!! mdsput(".ompsep:ne","data($)",bbb.ne[bbb.ixmp,com.iysptrx]) # base 0,   (0:nx+1,0:ny+1)
+### !!! mdsput(".ompsep:ne:basisname","data($)","bbb.ne[bbb.ixmp,com.iysptrx]") # base 0,   (0:nx+1,0:ny+1)
+### !!! mdsput(".ompsep:ne:comment","data($)","Electron density at OMP separatrix [grd.m^-3]") # base 0,   (0:nx+1,0:ny+1)
 
 # Outer midplane separatrix Te [eV]
-mdsput(".ompsep:te","data($)",1./bbb.qe*bbb.te[bbb.ixmp,com.iysptrx]) # base 0,   (0:nx+1,0:ny+1)
-mdsput(".ompsep:te:basisname","data($)","bbb.te[bbb.ixmp,com.iysptrx]/aph.bbb.ev") # base 0,   (0:nx+1,0:ny+1)
-mdsput(".ompsep:te:comment","data($)","Electron temperature at OMP separatrix, [eV]") # base 0,   (0:nx+1,0:ny+1)
+### !!! mdsput(".ompsep:te","data($)",1./bbb.qe*bbb.te[bbb.ixmp,com.iysptrx]) # base 0,   (0:nx+1,0:ny+1)
+### !!! mdsput(".ompsep:te:basisname","data($)","bbb.te[bbb.ixmp,com.iysptrx]/aph.bbb.ev") # base 0,   (0:nx+1,0:ny+1)
+### !!! mdsput(".ompsep:te:comment","data($)","Electron temperature at OMP separatrix, [eV]") # base 0,   (0:nx+1,0:ny+1)
 
 # Outer midplane separatrix Ti [eV]
-mdsput(".ompsep:ti","data($)",1./bbb.qe*bbb.ti[bbb.ixmp,com.iysptrx]) # base 0,   (0:nx+1,0:ny+1)
-mdsput(".ompsep:ti:basisname","data($)","bbb.ti[bbb.ixmp,com.iysptrx]/aph.bbb.ev") # base 0,   (0:nx+1,0:ny+1)
-mdsput(".ompsep:ti:comment","data($)","Ion temperature at OMP separatrix, [eV]") # base 0,   (0:nx+1,0:ny+1)
+### !!! mdsput(".ompsep:ti","data($)",1./bbb.qe*bbb.ti[bbb.ixmp,com.iysptrx]) # base 0,   (0:nx+1,0:ny+1)
+### !!! mdsput(".ompsep:ti:basisname","data($)","bbb.ti[bbb.ixmp,com.iysptrx]/aph.bbb.ev") # base 0,   (0:nx+1,0:ny+1)
+### !!! mdsput(".ompsep:ti:comment","data($)","Ion temperature at OMP separatrix, [eV]") # base 0,   (0:nx+1,0:ny+1)
 
 # end of IDENT.OMPSEP branch
 # --------------------------------------------------------------------------
@@ -1023,42 +1086,45 @@ mdsput(".ompsep:ti:comment","data($)","Ion temperature at OMP separatrix, [eV]")
 # store IDENT.SEP
 
 # Core-SOL electron energy flow [W]
-fhe=par.sum[bbb.feey[com.ixpt1+1:com.ixpt2,com.iysptrx]] # base 0,   (0:nx+1,0:ny+1)
-mdsput(".sep:fhe","data($)",fhe)
-mdsput(".sep:fhe:basisname","data($)","bbb.see write_uedge2mds") # base 0,   (0:nx+1,0:ny+1,1:nstra)
-mdsput(".sep:fhe:comment","data($)","electron energy flow across separatrix [W]")
+### !!! name 'par' is not defined. What is it?
+### !!! fhe=par.sum[bbb.feey[com.ixpt1+1:com.ixpt2,com.iysptrx]] # base 0,   (0:nx+1,0:ny+1)
+### !!! mdsput(".sep:fhe","data($)",fhe)
+### !!! mdsput(".sep:fhe:basisname","data($)","bbb.see write_uedge2mds") # base 0,   (0:nx+1,0:ny+1,1:nstra)
+### !!! mdsput(".sep:fhe:comment","data($)","electron energy flow across separatrix [W]")
 
 # Core-SOL ion energy flow [W]
-fhi=par.sum[bbb.feiy[com.ixpt1+1:com.ixpt2,com.iysptrx]] # base 0,   (0:nx+1,0:ny+1)
-mdsput(".sep:fhi","data($)",fhi)
-mdsput(".sep:fhi:basisname","data($)","bbb.see write_uedge2mds") # base 0,   (0:nx+1,0:ny+1,1:nstra)
-mdsput(".sep:fhi:comment","data($)","Ion energy flow across separatrix [W]")
+### !!! fhi=par.sum[bbb.feiy[com.ixpt1+1:com.ixpt2,com.iysptrx]] # base 0,   (0:nx+1,0:ny+1)
+### !!! mdsput(".sep:fhi","data($)",fhi)
+### !!! mdsput(".sep:fhi:basisname","data($)","bbb.see write_uedge2mds") # base 0,   (0:nx+1,0:ny+1,1:nstra)
+### !!! mdsput(".sep:fhi:comment","data($)","Ion energy flow across separatrix [W]")
 
 # Core-SOL electron flow [W] [per GDP]
-fne = np.zeros((com.nx+1,com.nisp))
+fne = np.zeros((com.nx+1+1,com.nisp))
 for ii in range(com.nisp):
-    fne[0:com.nx+1,ii]=bbb.fniy[:,com.iysptrx,ii]*api.bbb.zi[ii]-bbb.fqy[:,com.iysptrx]/bbb.qe # base 0,   (0:nx+1,0:ny+1) # base 0,   (0:nx+1,0:ny+1,1:nisp)
+    fne[0:com.nx+1+1,ii]=bbb.fniy[:,com.iysptrx,ii]*bbb.zi[ii]-bbb.fqy[:,com.iysptrx]/bbb.qe # base 0,   (0:nx+1,0:ny+1) # base 0,   (0:nx+1,0:ny+1,1:nisp)
 #enddo
-mdsput(".sep:fne","data($)",par.sum[fne[com.ixpt1+1:com.ixpt2,:]])
-mdsput(".sep:fne:basisname","data($)","bbb.see write_uedge2mds") # base 0,   (0:nx+1,0:ny+1,1:nstra)
-mdsput(".sep:fne:comment","data($)","Electron flux across separatrix [/s]")
+### !!! NameError: name 'par' is not defined
+### !!! mdsput(".sep:fne","data($)",par.sum[fne[com.ixpt1+1:com.ixpt2,:]])
+### !!! mdsput(".sep:fne:basisname","data($)","bbb.see write_uedge2mds") # base 0,   (0:nx+1,0:ny+1,1:nstra)
+### !!! mdsput(".sep:fne:comment","data($)","Electron flux across separatrix [/s]")
 
 # Core-SOL ion flow [W]
-fni=par.sum[bbb.fniy[com.ixpt1+1:com.ixpt2,com.iysptrx,1:com.nisp]] # base 0,   (0:nx+1,0:ny+1,1:nisp)
-mdsput(".sep:fni","data($)",fni)
-mdsput(".sep:fni:basisname","data($)","bbb.see write_uedge2mds") # base 0,   (0:nx+1,0:ny+1,1:nstra)
-mdsput(".sep:fni:comment","data($)","Ion flux across separatrix [/s]")
+### !!! NameError: name 'par' is not defined
+### !!! fni=par.sum[bbb.fniy[com.ixpt1+1:com.ixpt2,com.iysptrx,1:com.nisp]] # base 0,   (0:nx+1,0:ny+1,1:nisp)
+### !!! mdsput(".sep:fni","data($)",fni)
+### !!! mdsput(".sep:fni:basisname","data($)","bbb.see write_uedge2mds") # base 0,   (0:nx+1,0:ny+1,1:nstra)
+### !!! mdsput(".sep:fni:comment","data($)","Ion flux across separatrix [/s]")
 
 # End of IDENT branch
 # ------------------------------------------------------------------------
 
 # Now write MDSplus tree and disconnect
 
-mdstcl["write"]
+### !!! mdstcl["write"]
 
-mdsclose
-mdsdisconnect
-print("data written to shot ", shot_s) #remark "data written to shot "//shot_s
+### !!! mdsclose
+### !!! mdsdisconnect
+### !!! print("data written to shot ",shot_s) #remark "data written to shot "//shot_s
 
 outtree.write()
 outtree.close()
