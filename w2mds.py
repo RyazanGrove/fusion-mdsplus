@@ -341,28 +341,24 @@ mdsput(".grid:psinrad:comment","data($)","normalized poloidal flux radially at O
 # place holder for Coster's REGFLY parameter, flx.y-directed flux region indices
 
 # place holder for Coster's REGVOL parameter, volume region indices
-temp11 = com.ixpt1+1
-temp12 = temp11[0]
-temp21 = com.ixpt2
-temp22 = temp21[0]
-print(temp11)
-print(temp12)
-print(temp21)
-print(temp22)
-#pdb.set_trace()
-core1 = [14]
-#pdb.set_trace()
-#print(core)
-#core = np.array(list(range(temp12,temp22))) #core=range((int)(com.ixpt1+1),(int)(com.ixpt2))  ### !!! range core=com.ixpt1+1:com.ixpt2
-#print(core)
-#regvol = np.zeros((com.nx+1,com.ny+1),dtype=np.int32)
-#regvol[list(range(temp12,temp22)),0:com.iysptrx]=1 #regvol[core,0:com.iysptrx]=1
-#regvol[core,com.iysptrx+1:com.ny+1]=2
-#regvol[0:com.ixpt1,0:com.ny+1]=3
-#regvol[com.ixpt2+1:com.nx+1,0:com.ny+1]=4
-#mdsput(".grid:regvol","data($)",regvol)
-#mdsput(".grid:regvol:basisname","data($)","N/A")
-#mdsput(".grid:regvol:comment","data($)","1 for core, 2 for SOL abv xpt, 3 for inner divertor, 4 for outer divertor")
+
+''' INDICES FOR REGIONS PROJECTED ONTO PYTHON FULL (GCs INCLUDED) GRID '''
+ 
+# Range upper bound is exclusive: +1 to upper bound
+corex = slice((int)(com.ixpt1[0]+1),(int)(com.ixpt2[0]+1)) # Core X-coords
+lpfrx = slice(0,(int)(com.ixpt1[0]+1)) # Left PFR x-coords
+rpfrx = slice((int)(com.ixpt2[0]+1),(int)(com.nx+2)) # Right PFR x-coords
+private = slice(0,(int)(com.iysptrx+1)) # Private flux y-coords
+common = slice((int)(com.iysptrx+1),(int)(com.ny+2)) # Common flux y-coords
+
+regvol = np.zeros((com.nx+2,com.ny+2),dtype=np.int32) # AH - full domain (GCs incl)
+regvol[corex,private] = 1 # Mark core region as 1
+regvol[corex,common] = 2 # Mark Common SOL Core region as 2
+regvol[lpfrx,:] = 3 # Mark left PFR region as 3
+regvol[rpfrx,:] = 4 # Mark right PFR as 4
+mdsput(".grid:regvol","data($)",regvol)
+mdsput(".grid:regvol:basisname","data($)","N/A")
+mdsput(".grid:regvol:comment","data($)","1 for core, 2 for SOL abv xpt, 3 for inner divertor, 4 for outer divertor")
 
 # Z-coordinate of cell centers, Z in machine coordinates
 mdsput(".grid:cz:basisname","data($)","com.zm[,,0]-com.zshift") # base 0,   (0:nxm+1,0:nym+1,0:4)
@@ -381,9 +377,8 @@ mdsput(".grid:z:comment","data($)","Z of cell vertices, machine coordinates [grd
 # Vessel structure
 # test on com.xlim added for api.one of Rognlien's benchmark cases
 ### !!! where is transpose funcction? 
-#if com.nlim > 0:
-#    mdsput(".grid:vessel","data($)",transpose[[com.xlim[1:shape[com.xlim]-1],com.ylim[1:shape[com.ylim]-1]-com.zshift,com.xlim[2:shape[com.xlim]],com.ylim[2:shape[com.ylim]]-com.zshift]])
-#endif
+if com.nlim > 0:
+    mdsput(".grid:vessel","data($)", array([com.xlim[:-1], com.ylim[:-1]-com.zshift, com.xlim[1:], com.ylim[1:]-com.zshift]).transpose())
 mdsput(".grid:vessel:basisname","data($)","com.xlim[0], com.ylim[0]-com.zshift, com.xlim[1], com.ylim[1]-com.zshift")
 mdsput(".grid:vessel:comment","data($)","Data defining line segments of first wall [grd.m]")
 
@@ -725,72 +720,50 @@ mdsput(":te:comment","data($)","electron temperature in primary cell [eV]") # ba
 
 # place holder for Coster's TEXTMN parameter, Molecular species
 
-# Define species: 1=D0, 2=D+, 3=Imp0, 4,... = C+,++, ...
-hydrogen=["H0","H+"]
-deuterium=["D0","D+"]
-tritium=["T0","T+"]
-helium=["He0","He+","He2+"]
-lithium=["Li0","Li+","Li2+","Li3+"]
-berllyium=["Be0","Be+","Be2+","Be3+","Be4+"]
-boron=["B0","B+","B2+","B3+","B4+","B5+"]
-carbon=["C0","C+","C2+","C3+","C4+","C5+","C6+"]
-nitrogen=["N0","N+","N2+","N3+","N4+","N5+","N6+","N7+"]
-oxygen=["O0","O+","O2+","O3+","O4+","O5+","O6+","O7+", \
- "O8+"]
-fluorine=["F0","F+","F2+","F3+","F4+","F5+","F6+","F7+", \
-   "F8+","F9+"]
-neon=["Ne0","Ne+","Ne2+","Ne3+","Ne4+","Ne5+","Ne6+", \
-"Ne7+","Ne8+","Ne9+","Ne10+"]
+
+
+# AH
+# Here, we want to create a list of strings containing our species data
+# Easiest, most Pythonic way to do so is to append to an empty string
 
 ### !!! added textpl
-textpl = ['']*(ns+1)
 # Assume first neutral and ion species is an isotope of hydrogen
-if (bbb.znucl[1]==1):
-    if (bbb.minu[1] == 1.0):
-        textpl[ns]=hydrogen
-    elif (bbb.minu[1] == 2.0):
-        textpl[ns]=deuterium
-    elif (bbb.minu[1] == 3.0):
-        textpl[ns]=tritium
-    #endif
-else:
+# AH:   bbb.znucl and bbb.minu are defined in fortran to start from 
+#       index 1: in python all indices start from zero. 1 --> 0
+# Test that hydrogen is the main species
+if int(bbb.znucl[0])!=1:
+    # TODO: AH - print error message, close trees, disconnect from server, and close script
 ### !!! Needs more information!    remark "First species is not bbb.a hydrogen isotope!"
 ### !!! mdsclose
 ### !!! mdsdisconnect
-    print("something") ### !!! call kaboom[-1]
-#endif
+### !!! call kaboom[-1]
+    print("First species is not bbb.a hydrogen isotope!\nAborting...")
 
+Hsym=['H','D','T']
+
+textpl = [Hsym[int(bbb.minu[0]-1)]+'0', Hsym[int(bbb.minu[0]-1)]+'+']
+
+
+# Next, append the impurity species to the species list
+sym = ['','','He','Li','Be','B','C','N','O','F','Ne']
 if (bbb.isimpon > 5):
-    nsm1=2*com.nhgsp
-    for ii in range(com.nhgsp+1,com.ngsp):
-        jz=ii-com.nhgsp
-        if (bbb.znucl[nsm1+1] == 2):
-            textpl=[textpl[1:nsm1],helium[0:com.nzsp[jz]]]
-        elif (bbb.znucl[nsm1+1] == 3): 
-            textpl=[textpl[1:nsm1],lithium[0:com.nzsp[jz]]]
-        elif (bbb.znucl[nsm1+1] == 4):
-            textpl=[textpl[1:nsm1],berllyium[0:com.nzsp[jz]]]
-        elif (bbb.znucl[nsm1+1] == 5):
-            textpl=[textpl[1:nsm1],boron[0:com.nzsp[jz]]]
-        elif (bbb.znucl[nsm1+1] == 6):
-            textpl=[textpl[1:nsm1],carbon[0:com.nzsp[jz]]]
-        elif (bbb.znucl[nsm1+1] == 7):
-            textpl=[textpl[1:nsm1],nitrogen[0:com.nzsp[jz]]]
-        elif (bbb.znucl[nsm1+1] == 8):
-            textpl=[textpl[1:nsm1],oxygen[0:com.nzsp[jz]]]
-        elif (bbb.znucl[nsm1+1] == 9):
-            textpl=[textpl[1:nsm1],fluorine[0:com.nzsp[jz]]]
-        elif (bbb.znucl[nsm1+1] == 10):
-            textpl=[textpl[1:nsm1],neon[0:com.nzsp[jz]]]
-        else:
-            print("commented block line 743")#remark "Impurity species is greater than Ne!"
-            #mdsclose
-            #mdsdisconnect
-            #call kaboom[-1]
-        #endif
-        nsm1=nsm1+com.nzsp[jz]+1
-    #enddo
-#endif
+    for ii in com.nzsp:
+        # Non-empty impurity
+        if ii!=0:
+            if ii>10:
+                # TODO: AH - print error message, close trees, disconnect from server, and close script
+                print("Impurity species is greater than Ne!\nAborting...")
+            else:
+                imp = []
+                for i in range(ii+1):
+                    imp.append(sym[ii] +'{}'.format(i)*(i!=1)+'+'*(i!=0))
+            textpl+=imp
+                    
+print(textpl)
+                
+
+                
+                
 
 mdsput(".textpl","data($)",textpl)
 mdsput(".textpl:basisname","data($)","no corresponding BASIS variable")
