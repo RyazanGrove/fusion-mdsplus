@@ -19,12 +19,21 @@ import pdb
 import os
 from datetime import date
 import getpass
+import socket
 
 yes=1
 no=0
 
+length = com.nx + 2
+width = com.ny + 2
+lengthb = com.nx + 1 # right border of the matrix
+widthb = com.ny + 1 # top border of the matrix
+ixpt1 = com.ixpt1
+ixpt2 = com.ixpt2
+iysptrx = com.iysptrx
+# line 354
+iysptrxb = com.iysptrx + 1 # border after separatrix
 
-    
     
 outtree = tree.Tree('uedge')
 shot = outtree.incrementCurrent()
@@ -161,17 +170,17 @@ mdsput(".grid:am:basisname","data($)","see write_uedge2mds") # base 0,   (0:nx+1
 mdsput(".grid:am:comment","data($)","ion/neutral mass [amu]")
 
 # Generate UEDGE variables for rightix, leftix, etc.
-rightix = np.zeros((com.nx+2,com.ny+2),dtype=np.int32)
-leftix = np.zeros((com.nx+2,com.ny+2),dtype=np.int32)
-topix = np.zeros((com.nx+2,com.ny+2),dtype=np.int32)
-bottomix = np.zeros((com.nx+2,com.ny+2),dtype=np.int32)
-leftiy = np.zeros((com.nx+2,com.ny+2),dtype=np.int32)
-rightiy = np.zeros((com.nx+2,com.ny+2),dtype=np.int32)
-topiy = np.zeros((com.nx+2,com.ny+2),dtype=np.int32)
-bottomiy = np.zeros((com.nx+2,com.ny+2),dtype=np.int32)
+rightix = np.zeros((length,width),dtype=np.int32)
+leftix = np.zeros((length,width),dtype=np.int32)
+topix = np.zeros((length,width),dtype=np.int32)
+bottomix = np.zeros((length,width),dtype=np.int32)
+leftiy = np.zeros((length,width),dtype=np.int32)
+rightiy = np.zeros((length,width),dtype=np.int32)
+topiy = np.zeros((length,width),dtype=np.int32)
+bottomiy = np.zeros((length,width),dtype=np.int32)
 
-for ix in np.arange(0, com.nx+2):
-   for iy in np.arange(0, com.ny+2):
+for ix in np.arange(0, length):
+   for iy in np.arange(0, width):
       leftix[ix,iy]=bbb.idxm1
       rightix[ix,iy]=bbb.idxp1
       bottomix[ix,iy]=max(0,ix+1)
@@ -215,7 +224,7 @@ mdsput(".grid:cr:comment","data($)","Radial coordinate of cell center [grd.m]")
 
 # normalized poloidal flux of each cell
 if not 'psin' in locals():
-    psin=(com.psi[0:com.nx+2,0:com.ny+2,0]-com.simagx)/(com.sibdry-com.simagx) # base 0,   (0:nxm+1,0:nym+1,0:4)
+    psin=(com.psi[0:length,0:width,0]-com.simagx)/(com.sibdry-com.simagx) # base 0,   (0:nxm+1,0:nym+1,0:4)
 mdsput(".grid:psin","data($)",psin)
 mdsput(".grid:psin:basisname","data($)","bbb.see write_uedge2mds") # base 0,   (0:nx+1,0:ny+1,1:nstra)
 mdsput(".grid:psin:comment","data($)","Normalized poloidal flux in cells")
@@ -226,22 +235,22 @@ mdsput(".grid:psin:comment","data($)","Normalized poloidal flux in cells")
 # checked to here - Bill Meyer
 #
 # R- and Z-coordinate of cell east [X] face, Z in machine coordinates
-trm=0.5*(com.rm[0:com.nx+1,:,2]+com.rm[0:com.nx+1,:,4]) # base 0,   (0:nxm+1,0:nym+1,0:4)
+trm=0.5*(com.rm[0:lengthb,:,2]+com.rm[0:lengthb,:,4]) # base 0,   (0:nxm+1,0:nym+1,0:4)
 mdsput(".grid:cr_x","data($)",trm)
 mdsput(".grid:cr_x:basisname","data($)","0.5*[com.rm[0:com.nx,,2]+com.rm[0:com.nx,,4]]") # base 0,   (0:nxm+1,0:nym+1,0:4)
 mdsput(".grid:cr_x:comment","data($)","radial coordinate of east face [grd.m]")
 
-trm=0.5*(com.zm[0:com.nx+1,:,2]+com.zm[0:com.nx+1,:,4]-com.zshift) # base 0,   (0:nxm+1,0:nym+1,0:4)
+trm=0.5*(com.zm[0:lengthb,:,2]+com.zm[0:lengthb,:,4]-com.zshift) # base 0,   (0:nxm+1,0:nym+1,0:4)
 mdsput(".grid:cz_x","data($)",trm)
 mdsput(".grid:cz_x:basisname","data($)","0.5*[com.zm[0:com.nx,,2]+com.zm[0:com.nx,,4]]-com.zshift") # base 0,   (0:nxm+1,0:nym+1,0:4)
 mdsput(".grid:cz_x:comment","data($)","vertical coordinate of east face, machine coordinates [grd.m]")
 
 # R- and Z-coordinate of cell north [Y] face, Z in machine coordinates
-trm=0.5*(com.rm[:,0:com.ny+1,3]+com.rm[:,0:com.ny+1,4]) # base 0,   (0:nxm+1,0:nym+1,0:4)
+trm=0.5*(com.rm[:,0:widthb,3]+com.rm[:,0:widthb,4]) # base 0,   (0:nxm+1,0:nym+1,0:4)
 mdsput(".grid:cr_y","data($)",trm)
 mdsput(".grid:cr_y:basisname","data($)","0.5*[com.rm[,0:com.ny,3]+com.rm[,0:com.ny,4]]") # base 0,   (0:nxm+1,0:nym+1,0:4)
 mdsput(".grid:cr_y:comment","data($)","radial coordinate of north face [grd.m]")
-trm=0.5*(com.zm[:,0:com.ny+1,3]+com.zm[:,0:com.ny+1,4])-com.zshift # base 0,   (0:nxm+1,0:nym+1,0:4)
+trm=0.5*(com.zm[:,0:widthb,3]+com.zm[:,0:widthb,4])-com.zshift # base 0,   (0:nxm+1,0:nym+1,0:4)
 mdsput(".grid:cz_y","data($)",trm)
 mdsput(".grid:cz_y:basisname","data($)","0.5*[com.zm[,0:com.ny,3]+com.zm[,0:com.ny,4]]-com.zshift") # base 0,   (0:nxm+1,0:nym+1,0:4)
 mdsput(".grid:cz_y:comment","data($)","Vertical coordinate of north face, machine coordinates, [grd.m]")
@@ -250,11 +259,11 @@ mdsput(".grid:cz_y:comment","data($)","Vertical coordinate of north face, machin
 if not 'iscalc_length' in locals(): iscalc_length=no
 if iscalc_length == no:  
 
-   lpol = np.zeros((com.nx+2,com.ny+2))
-   lparal = np.zeros((com.nx+2,com.ny+2))
-   lpolf = np.zeros((com.nx+2,com.ny+2))
-   lparalf = np.zeros((com.nx+2,com.ny+2))
-   for iy in np.arange(com.ny+2):
+   lpol = np.zeros((length,width))
+   lparal = np.zeros((length,width))
+   lpolf = np.zeros((length,width))
+   lparalf = np.zeros((length,width))
+   for iy in np.arange(width):
       lpolf[0,iy] = 1./com.gx[0,iy]
       lpol[0,iy] = 0.5/com.gx[0,iy]
       lparal[0,iy] = 0.5/com.gx[0,iy]/com.rr[0,iy]
@@ -284,9 +293,9 @@ if iscalc_length == no:
        #	lrad(ix,iy)
 
        ### integer ix,iy
-       lrad = np.zeros((com.nx+1,com.ny+1))
-       lradf = np.zeros((com.nx+1,com.ny+1))
-       for ix in range(com.nx+1):
+       lrad = np.zeros((lengthb,widthb))
+       lradf = np.zeros((lengthb,widthb))
+       for ix in range(lengthb):
            lradf[ix,0]=1./com.gy[ix,0]
            lrad[ix,0]=0.5/com.gy[ix,0]
            for iy in range(1,com.ny+1): #do iy=1,ny+1
@@ -349,11 +358,11 @@ mdsput(".grid:psinrad:comment","data($)","normalized poloidal flux radially at O
 # Range upper bound is exclusive: +1 to upper bound
 corex = slice((int)(com.ixpt1[0]+1),(int)(com.ixpt2[0]+1)) # Core X-coords
 lpfrx = slice(0,(int)(com.ixpt1[0]+1)) # Left PFR x-coords
-rpfrx = slice((int)(com.ixpt2[0]+1),(int)(com.nx+2)) # Right PFR x-coords
-private = slice(0,(int)(com.iysptrx+1)) # Private flux y-coords
-common = slice((int)(com.iysptrx+1),(int)(com.ny+2)) # Common flux y-coords
+rpfrx = slice((int)(com.ixpt2[0]+1),(int)(length)) # Right PFR x-coords
+private = slice(0,(int)(iysptrxb)) # Private flux y-coords
+common = slice((int)(iysptrxb),(int)(width)) # Common flux y-coords
 
-regvol = np.zeros((com.nx+2,com.ny+2),dtype=np.int32) # AH - full domain (GCs incl)
+regvol = np.zeros((length, width),dtype=np.int32) # AH - full domain (GCs incl)
 regvol[corex,private] = 1 # Mark core region as 1
 regvol[corex,common] = 2 # Mark Common SOL Core region as 2
 regvol[lpfrx,:] = 3 # Mark left PFR region as 3
@@ -445,7 +454,7 @@ bppol = com.bpol[:,:,0] ### !!! real bppol[0:com.nx+1,0:com.ny+1]=com.com.bpol[,
 btor = com.bphi[:,:,0] ### !!! real btor[0:com.nx+1,0:com.ny+1]=com.com.bphi[,,0] # base 0,   (0:nxm+1,0:nym+1,0:4)
 brad = com.br[:,:,0] ### !!! real brad[0:com.nx+1,0:com.ny+1]=com.com.br[,,0] # base 0,   (0:nxm+1,0:nym+1,0:4)
 bbb.btot = com.b[:,:,0] #Can we do this??? ### !!! real bbb.btot[0:com.nx+1,0:com.ny+1]=com.com.b[,,0] # base 0,   (0:nxm+1,0:nym+1,0:4) # base 0,   (0:nx+1,0:ny+1)
-mdsput(":b","build_signal[build_with_units[$,""T""],,\top.snapshot.grid:cr,\top.snapshot.grid:cz]",[bppol[0:com.nx+1,0:com.ny+1],brad[0:com.nx+1,0:com.ny+1],btor[0:com.nx+1,0:com.ny+1],bbb.btot[0:com.nx+1,0:com.ny+1]])  # base 0,   (0:nxm+1,0:nym+1,0:4) # base 0,   (0:nx+1,0:ny+1)
+mdsput(":b","build_signal[build_with_units[$,""T""],,\top.snapshot.grid:cr,\top.snapshot.grid:cz]",[bppol[0:lengthb,0:widthb],brad[0:lengthb,0:widthb],btor[0:lengthb,0:widthb],bbb.btot[0:lengthb,0:widthb]])  # base 0,   (0:nxm+1,0:nym+1,0:4) # base 0,   (0:nx+1,0:ny+1)
 mdsput(":b:basisname","data($)","[com.com.bpol,com.br,com.bphi,com.b]") # base 0,   (0:nxm+1,0:nym+1,0:4) # base 0,   (0:nxm+1,0:nym+1,0:4) # base 0,   (0:nxm+1,0:nym+1,0:4) # base 0,   (0:nxm+1,0:nym+1,0:4)
 mdsput(":b:comment","data($)","magnetic field components [T]") # base 0,   (0:nxm+1,0:nym+1,0:4)
 
@@ -460,13 +469,13 @@ mdsput(":b:comment","data($)","magnetic field components [T]") # base 0,   (0:nx
 # placeholder for Coster's DP parameter, Dpa
 
 # Poloidal electric current [GDP] - referenced to east [X] face
-fchx=bbb.fqx[0:com.nx,0:com.ny+1] # base 0,   (0:nx+1,0:ny+1)
+fchx=bbb.fqx[0:com.nx,0:lengthb] # base 0,   (0:nx+1,0:ny+1)
 mdsput(":fchx","build_signal[build_with_units[$,""Amp""],,\top.snapshot.grid:cr_x,\top.snapshot.grid:cz_x,\top.snapshot:textpl]",fchx)
 mdsput(":fchx:basisname","data($)","bbb.fqx[0:com.nx,]") # base 0,   (0:nx+1,0:ny+1)
 mdsput(".fchx:comment","data($)","electric current across east face [Amp]")
 
 # Radial electric current - referenced to the north [Y] face
-fchy=bbb.fqy[0:com.ny+1,0:com.ny] # base 0,   (0:nx+1,0:ny+1)
+fchy=bbb.fqy[0:widthb,0:com.ny] # base 0,   (0:nx+1,0:ny+1)
 mdsput(":fchy","build_signal[build_with_units[$,""Amp""],,\top.snapshot.grid:cr_y,\top.snapshot.grid:cz_y,\top.snapshot:textpl]",fchy)
 mdsput(":fchy:basisname","data($)","fqyy[,0:com.ny]")
 mdsput(".fchy:comment","data($)","electric current across north face [Amp]")
@@ -508,7 +517,7 @@ mdsput(".fhiy:comment","data($)","Ion energy flow across north face [W]")
 # place holder for Coster's fhty parameter, Radial  total energy flux
 
 # Poloidal momentum current, east [X] face - resolved for all species 
-fmox = np.zeros((com.nx,com.ny+1+1,2+1)) ### !!! real fmox[0:com.nx,0:com.ny+1,2]
+fmox = np.zeros((com.nx,width,3)) ### !!! real fmox[0:com.nx,0:com.ny+1,2]
 #fmox[,,1]=0
 if (bbb.isupgon[1] == 1): fmox[:,:,1]=bbb.fmix[0:com.nx,:,2] ### !!! if [bbb.isupgon[1] .eq. 1] fmox[,,1]=bbb.fmix[0:com.nx,,2] # base 0,   (0:nx+1,0:ny+1,1:nusp)
 #pdb.set_trace()
@@ -519,7 +528,7 @@ mdsput(":fmox:basisname","data($)","bbb.fmix[0:com.nx,,]") # base 0,   (0:nx+1,0
 mdsput(".fmox:comment","data($)","momentum across east face [Nwt]")
 
 # Radial particle flux, north [Y] face  - resolved for all species 
-fmoy = np.zeros((com.nx+1+1,com.ny,2+1))### !!! real fmoy[0:com.nx+1,0:com.ny,2]
+fmoy = np.zeros((length,com.ny,3))### !!! real fmoy[0:com.nx+1,0:com.ny,2]
 fmoy[:,:,1]=0.0
 if (bbb.isupgon[1] == 1): fmoy[:,:,1]=bbb.fmiy[:,0:com.ny,2] ### !!! if [bbb.isupgon[1] .eq. 1] fmoy[,,1]=bbb.fmiy[,0:com.ny,2] # base 0,   (0:nx+1,0:ny+1,1:nusp)
 fmoy[:,:,2]=bbb.fmiy[:,0:com.ny,1] # base 0,   (0:nx+1,0:ny+1,1:nusp)
@@ -530,7 +539,7 @@ mdsput(".fmoy:comment","data($)"," momentum across north face [Nwt]")
 
 # Poloidal particle current, east [X] face - resolved for all species 
 # don't use bbb.fnax for variable since already exists
-fncx = np.empty((com.nx,com.ny+1+1,ns)) ### !!! real fncx[0:com.nx,0:com.ny+1,ns]
+fncx = np.empty((com.nx,width,ns)) ### !!! real fncx[0:com.nx,0:com.ny+1,ns]
 ###integer bbb.igsp,ifld,ii
 # note this indexing does not com.work if there is more than api.one inertial neutral
 for ii in range(com.nhgsp): ### do ii=1,com.nhgsp
@@ -560,7 +569,7 @@ mdsput(":fnax:comment","data($)","particle current across east face [s^-1]")
 
 # Radial particle flux, north [Y] face  - resolved for all species 
 # don't use bbb.fnay for variable since it already exists
-fncy = np.zeros((com.nx+1+1,com.ny,ns))### !!! real fncy[0:com.nx+1,0:com.ny,ns]
+fncy = np.zeros((length,com.ny,ns))### !!! real fncy[0:com.nx+1,0:com.ny,ns]
 #integer bbb.igsp,ifld,ii
 # note this indexing does not com.work if there is more than api.one inertial neutral
 for ii in range(com.nhgsp): #do ii=1,com.nhgsp
@@ -589,13 +598,13 @@ mdsput(":fnay:comment","data($)","particle current across north face [s^-1]")
 # placeholder for Coster fnay_52 parameter, Radial particle flux [5/2 piece]
 
 # hx, length of cell
-hx = np.full((com.nx+1+1,com.ny+1+1), 1/com.gx) ### !!! real hx[0:com.nx+1,0:com.ny+1]=1/com.gx # base 0,   (0:nx+1,0:ny+1)
+hx = np.full((length,width), 1/com.gx) ### !!! real hx[0:com.nx+1,0:com.ny+1]=1/com.gx # base 0,   (0:nx+1,0:ny+1)
 mdsput(":hx","build_signal[build_with_units[$,""grd.m""],,\top.snapshot.grid:cr,\top.snapshot.grid:cz]",hx)
 mdsput(":hx:basisname","data($)","1/com.gx") # base 0,   (0:nx+1,0:ny+1)
 mdsput(".hx:comment","data($)","length of primary cells [grd.m]")
 
 # hy, width of cell
-hy = np.full((com.nx+1+1,com.ny+1+1), 1/com.gy) ### !!! real hy[0:com.nx+1,0:com.ny+1]=1/com.gy # base 0,   (0:nx+1,0:ny+1)
+hy = np.full((length,width), 1/com.gy) ### !!! real hy[0:com.nx+1,0:com.ny+1]=1/com.gy # base 0,   (0:nx+1,0:ny+1)
 mdsput(":hy","build_signal[build_with_units[$,""grd.m""],,\top.snapshot.grid:cr,\top.snapshot.grid:cz]",hy)
 mdsput(":hy:basisname","data($)","1/com.gy") # base 0,   (0:nx+1,0:ny+1)
 mdsput(".hy:comment","data($)","width of primary cells [grd.m]")
@@ -609,7 +618,7 @@ mdsput(".hy:comment","data($)","width of primary cells [grd.m]")
 # place holder for Coster's kyi0 parameter, kyi0
 
 # Neutral/ion density
-iondens = np.zeros((com.nx+1+1,com.ny+1+1,ns))
+iondens = np.zeros((length,width,ns))
 
 ### integer bbb.igsp,ifld,ii
 # note this indexing does not com.work if there is more than api.one inertial neutral
@@ -782,7 +791,7 @@ mdsput(":ti:comment","data($)","Ion temperature in primary cell [eV]") # base 0,
 
 # [Neutral]/Ion parallel velocity
 # Diffusive neutral carbon model, hence set carbon neutral velocity to api.zero
-ua = np.zeros((com.nx,com.ny+1+1,ns)) ### !!! real ua[0:com.nx,0:com.ny+1,ns]
+ua = np.zeros((com.nx,width,ns)) ### !!! real ua[0:com.nx,0:com.ny+1,ns]
 #integer bbb.igsp,ifld,ii
 if (com.nhgsp > 1):
     print("commented block") #remark "Not implemented for more than api.one hydrogen species!"
@@ -873,9 +882,9 @@ mdsput(".geometry:basisname","data($)","com.geometry")
 mdsput(".geometry:comment","data($)","mnemonic for com.geometry")
 
 # Host identification
-### !!! temp=infohost
-### !!! mdsput(":host","data($)",temp)
-### !!! mdsput(".host:comment","data($)","host running on when write to MDSplus")
+temp=socket.gethostbyname(socket.gethostname())
+mdsput(":host","data($)",temp)
+mdsput(".host:comment","data($)","host running on when write to MDSplus")
 
 # place holder for Coster's parameter MAIN, Label in b2fstate derived from b2mn.dat
 
@@ -887,13 +896,13 @@ mdsput(".ns:comment","data($)","Number of species")
 
 # Grid size in poloidal direction, including guard cells
 ### !!! MDSplus.mdsExceptions.TreeNNF: %TREE-W-NNF, Node Not Found
-mdsput(".nx","data($)",com.nx+2)
+mdsput(".nx","data($)",length)
 mdsput(".nx:basisname","data($)","com.nx+2")
 mdsput(".nx:comment","data($)","Number of poloidal cells")
 
 # Grid size in radial direction, including guard cells
 ### !!! MDSplus.mdsExceptions.TreeNNF: %TREE-W-NNF, Node Not Found
-mdsput(".ny","data($)",com.ny+2)
+mdsput(".ny","data($)",width)
 mdsput(".ny:basisname","data($)","com.ny+2")
 mdsput(".ny:comment","data($)","Number of radial cells")
 
@@ -902,7 +911,7 @@ mdsput(".ny:comment","data($)","Number of radial cells")
 # place holder for Coster's parameter PHYSICS
 
 # Problem name
-### !!! mdsput(".probname","data($)",probname)
+mdsput(".probname","data($)",bbb.label)
 
 ### !!! MDSplus.mdsExceptions.TreeNNF: %TREE-W-NNF, Node Not Found
 mdsput(":shot","data($)",com.eshot)
@@ -960,13 +969,13 @@ mdsput(".user:comment","data($)","User running code when MDSPLUS data written")
 
 # Inner midplane separatrix R
 ### !!! MDSplus.mdsExceptions.TreeNNF: %TREE-W-NNF, Node Not Found
-mdsput(".impsep:cr","data($)",com.rm[iximp,com.iysptrx,0]) # base 0,   (0:nxm+1,0:nym+1,0:4)
+mdsput(".impsep:cr","data($)",com.rm[iximp,iysptrx,0]) # base 0,   (0:nxm+1,0:nym+1,0:4)
 mdsput(".impsep.cr:basisname","data($)","com.rm[iximp,com.iysptrx,0]") # base 0,   (0:nxm+1,0:nym+1,0:4)
 mdsput(".impsep.cr:comment","data($)","Separatrix radius at IMP [grd.m]")
 
 # Inner midplane separatrix Z
 ### !!! MDSplus.mdsExceptions.TreeNNF: %TREE-W-NNF, Node Not Found
-mdsput(".impsep:cz","data($)",com.zm[iximp,com.iysptrx,0]) # base 0,   (0:nxm+1,0:nym+1,0:4)
+mdsput(".impsep:cz","data($)",com.zm[iximp,iysptrx,0]) # base 0,   (0:nxm+1,0:nym+1,0:4)
 mdsput(".impsep.cz:basisname","data($)","com.zm[iximp,com.iysptrx,0]") # base 0,   (0:nxm+1,0:nym+1,0:4)
 mdsput(".impsep.cz:comment","data($)","Separatrix vertical position at IMP [grd.m]")
 
@@ -993,19 +1002,19 @@ mdsput(".impsep:kyi:comment","data($)","ion thermal diffusicity [m2/s]")
 
 # Inner midplane separatrix bbb.ne # base 0,   (0:nx+1,0:ny+1)
 ### !!! MDSplus.mdsExceptions.TreeNNF: %TREE-W-NNF, Node Not Found
-mdsput(".impsep:ne","data($)",bbb.ne[iximp,com.iysptrx]) # base 0,   (0:nx+1,0:ny+1)
+mdsput(".impsep:ne","data($)",bbb.ne[iximp,iysptrx]) # base 0,   (0:nx+1,0:ny+1)
 mdsput(".impsep:ne:basisname","data($)","bbb.ne[iximp,com.iysptrx]") # base 0,   (0:nx+1,0:ny+1)
 mdsput(".impsep:ne:comment","data($)","Electron density at IMP separatrix [grd.m^-3]") # base 0,   (0:nx+1,0:ny+1)
 
 # Inner midplane separatrix Te [eV]
 ### !!! MDSplus.mdsExceptions.TreeNNF: %TREE-W-NNF, Node Not Found
-mdsput(".impsep:te","data($)",1./bbb.qe*bbb.te[iximp,com.iysptrx]) # base 0,   (0:nx+1,0:ny+1)
+mdsput(".impsep:te","data($)",1./bbb.qe*bbb.te[iximp,iysptrx]) # base 0,   (0:nx+1,0:ny+1)
 mdsput(".impsep:te:basisname","data($)","bbb.te[iximp,com.iysptrx]/aph.bbb.ev") # base 0,   (0:nx+1,0:ny+1)
 mdsput(".impsep:te:comment","data($)","Electron temperature at IMP separatrix, [eV]") # base 0,   (0:nx+1,0:ny+1)
 
 # Inner midplane separatrix Ti [eV]
 ### !!! MDSplus.mdsExceptions.TreeNNF: %TREE-W-NNF, Node Not Found
-mdsput(".impsep:ti","data($)",1./bbb.qe*bbb.ti[iximp,com.iysptrx]) # base 0,   (0:nx+1,0:ny+1)
+mdsput(".impsep:ti","data($)",1./bbb.qe*bbb.ti[iximp,iysptrx]) # base 0,   (0:nx+1,0:ny+1)
 mdsput(".impsep:ti:basisname","data($)","bbb.ti[iximp,com.iysptrx]/aph.bbb.ev") # base 0,   (0:nx+1,0:ny+1)
 mdsput(".impsep:ti:comment","data($)","Ion temperature at IMP separatrix, [eV]") # base 0,   (0:nx+1,0:ny+1)
 
@@ -1017,12 +1026,12 @@ mdsput(".impsep:ti:comment","data($)","Ion temperature at IMP separatrix, [eV]")
 
 # Outer midplane separatrix R
 ### !!! MDSplus.mdsExceptions.TreeNNF: %TREE-W-NNF, Node Not Found
-mdsput(".ompsep:cr","data($)",com.rm[bbb.ixmp,com.iysptrx,0]) # base 0,   (0:nxm+1,0:nym+1,0:4)
+mdsput(".ompsep:cr","data($)",com.rm[bbb.ixmp,iysptrx,0]) # base 0,   (0:nxm+1,0:nym+1,0:4)
 mdsput(".ompsep.cr:basisname","data($)","com.rm[bbb.ixmp,com.iysptrx,0]") # base 0,   (0:nxm+1,0:nym+1,0:4)
 mdsput(".ompsep.cr:comment","data($)","Separatrix radius at OMP [grd.m]")
 
 # Outer midplane separatrix Z
-mdsput(".ompsep:cz","data($)",com.zm[bbb.ixmp,com.iysptrx,0]) # base 0,   (0:nxm+1,0:nym+1,0:4)
+mdsput(".ompsep:cz","data($)",com.zm[bbb.ixmp,iysptrx,0]) # base 0,   (0:nxm+1,0:nym+1,0:4)
 mdsput(".ompsep.cz:basisname","data($)","com.zm[bbb.ixmp,com.iysptrx,0]") # base 0,   (0:nxm+1,0:nym+1,0:4)
 mdsput(".ompsep.cz:comment","data($)","Separatrix vertical position at OMP [grd.m]")
 
@@ -1045,17 +1054,17 @@ mdsput(".impsep:kyi:comment","data($)","ion thermal diffusicity [m2/s]")
 # mdsput(".ompsep:kyi0","data($)",???)
 
 # Outer midplane separatrix bbb.ne # base 0,   (0:nx+1,0:ny+1)
-mdsput(".ompsep:ne","data($)",bbb.ne[bbb.ixmp,com.iysptrx]) # base 0,   (0:nx+1,0:ny+1)
+mdsput(".ompsep:ne","data($)",bbb.ne[bbb.ixmp,iysptrx]) # base 0,   (0:nx+1,0:ny+1)
 mdsput(".ompsep:ne:basisname","data($)","bbb.ne[bbb.ixmp,com.iysptrx]") # base 0,   (0:nx+1,0:ny+1)
 mdsput(".ompsep:ne:comment","data($)","Electron density at OMP separatrix [grd.m^-3]") # base 0,   (0:nx+1,0:ny+1)
 
 # Outer midplane separatrix Te [eV]
-mdsput(".ompsep:te","data($)",1./bbb.qe*bbb.te[bbb.ixmp,com.iysptrx]) # base 0,   (0:nx+1,0:ny+1)
+mdsput(".ompsep:te","data($)",1./bbb.qe*bbb.te[bbb.ixmp,iysptrx]) # base 0,   (0:nx+1,0:ny+1)
 mdsput(".ompsep:te:basisname","data($)","bbb.te[bbb.ixmp,com.iysptrx]/aph.bbb.ev") # base 0,   (0:nx+1,0:ny+1)
 mdsput(".ompsep:te:comment","data($)","Electron temperature at OMP separatrix, [eV]") # base 0,   (0:nx+1,0:ny+1)
 
 # Outer midplane separatrix Ti [eV]
-mdsput(".ompsep:ti","data($)",1./bbb.qe*bbb.ti[bbb.ixmp,com.iysptrx]) # base 0,   (0:nx+1,0:ny+1)
+mdsput(".ompsep:ti","data($)",1./bbb.qe*bbb.ti[bbb.ixmp,iysptrx]) # base 0,   (0:nx+1,0:ny+1)
 mdsput(".ompsep:ti:basisname","data($)","bbb.ti[bbb.ixmp,com.iysptrx]/aph.bbb.ev") # base 0,   (0:nx+1,0:ny+1)
 mdsput(".ompsep:ti:comment","data($)","Ion temperature at OMP separatrix, [eV]") # base 0,   (0:nx+1,0:ny+1)
 
@@ -1079,9 +1088,9 @@ mdsput(".ompsep:ti:comment","data($)","Ion temperature at OMP separatrix, [eV]")
 ### !!! mdsput(".sep:fhi:comment","data($)","Ion energy flow across separatrix [W]")
 
 # Core-SOL electron flow [W] [per GDP]
-fne = np.zeros((com.nx+1+1,com.nisp))
+fne = np.zeros((length,com.nisp))
 for ii in range(com.nisp):
-    fne[0:com.nx+1+1,ii]=bbb.fniy[:,com.iysptrx,ii]*bbb.zi[ii]-bbb.fqy[:,com.iysptrx]/bbb.qe # base 0,   (0:nx+1,0:ny+1) # base 0,   (0:nx+1,0:ny+1,1:nisp)
+    fne[0:length,ii]=bbb.fniy[:,iysptrx,ii]*bbb.zi[ii]-bbb.fqy[:,iysptrx]/bbb.qe # base 0,   (0:nx+1,0:ny+1) # base 0,   (0:nx+1,0:ny+1,1:nisp)
 #enddo
 ### !!! NameError: name 'par' is not defined
 ### !!! mdsput(".sep:fne","data($)",par.sum[fne[com.ixpt1+1:com.ixpt2,:]])
